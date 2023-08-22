@@ -1,0 +1,5 @@
+<mj-section padding-top="20px" padding-bottom="0px">
+  <mj-column width="490px">
+    <mj-text padding-top="0" mj-class="mjfooter-text">{{Resources.Emails.Partials.Footer}}</mj-text>
+  </mj-column>
+</mj-section>

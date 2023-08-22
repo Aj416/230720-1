@@ -1,0 +1,143 @@
+@adminToken = {{getAdminToken.response.body.id_token}}
+@neatoBrandId = {{brands.response.body.$[?(@.name=='Neato')].id}}
+@hpBrandId = {{brands.response.body.$[?(@.name=='HP SmartFriend')].id}}
+@otroBrandId = {{brands.response.body.$[?(@.name=='Otro')].id}}
+@lazadaBrandId = {{brands.response.body.$[?(@.name=='Lazada')].id}}
+@solvBrandId = {{brands.response.body.$[?(@.name=='Solv')].id}}
+@companyOneBrandId = {{brands.response.body.$[?(@.name=='CompanyOne')].id}}
+@companyTwoBrandId = {{brands.response.body.$[?(@.name=='CompanyTwo')].id}}
+
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+##################################################
+### Get available brands
+##################################################
+# @name brands
+GET {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Add abandon reasons for NEATO
+##################################################
+POST {{api_url}}/brands/{{neatoBrandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"Complaint",
+	"No information",
+	"Follow up/Repair",
+	"GDPR",
+	"Return/Refund",
+	"Accident",
+	"Don't like the price",
+	"Technical issue",
+	"Not relevant to me",
+	"Too difficult",
+	"Don't understand"	
+]
+
+##################################################
+### Add abandon reasons all other brands
+##################################################
+POST {{api_url}}/brands/{{hpBrandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"Don't like the price",
+	"Technical issue",
+	"Not relevant to me",
+	"Too difficult",
+	"Don't understand"
+]
+
+##################################################
+### Add abandon reasons all other brands
+##################################################
+POST {{api_url}}/brands/{{otroBrandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"Don't like the price",
+	"Technical issue",
+	"Not relevant to me",
+	"Too difficult",
+	"Don't understand"
+]
+
+##################################################
+### Add abandon reasons all other brands
+##################################################
+POST {{api_url}}/brands/{{lazadaBrandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"Don't like the price",
+	"Technical issue",
+	"Not relevant to me",
+	"Too difficult",
+	"Don't understand"
+]
+
+##################################################
+### Add abandon reasons all other brands
+##################################################
+POST {{api_url}}/brands/11111111-1111-1111-1111-111111111111/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"Don't like the price",
+	"Technical issue",
+	"Not relevant to me",
+	"Too difficult",
+	"Don't understand"
+]
+
+##################################################
+### Add abandon reasons all other brands
+##################################################
+POST {{api_url}}/brands/{{companyOneBrandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"Don't like the price",
+	"Technical issue",
+	"Not relevant to me",
+	"Too difficult",
+	"Don't understand"
+]
+
+##################################################
+### Add abandon reasons all other brands
+##################################################
+POST {{api_url}}/brands/{{companyTwoBrandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"Don't like the price",
+	"Technical issue",
+	"Not relevant to me",
+	"Too difficult",
+	"Don't understand"
+]

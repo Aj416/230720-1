@@ -1,0 +1,180 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Get available brands
+##################################################
+# @name brands
+GET {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+###
+@brandId = {{brands.response.body.$[?(@.name=='HP')].id}}
+
+##################################################
+### Create induction section for brand
+##################################################
+POST {{api_url}}/brands/{{brandId}}/induction/sections
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Name": "Identity and values (1 hr to complete)",
+	"Items": [
+		{
+			"Name": "Brand rules and key info",
+			"Source": "https://assets.solvnow.com/hp/Chat+Guidelines+HP.pdf"
+		},
+		{
+			"Name": "Frequently asked questions",
+			"Source": "https://assets.solvnow.com/hp/Frequently+Asked+Questions+HP.pdf"
+		},
+		{
+			"Name": "How to communicate with HP customers",
+			"Source": "https://assets.solvnow.com/hp/How+to+communicate+with+HP+customers.pdf"
+		},
+		{
+			"Name": "Data privacy",
+			"Source": "https://www8.hp.com/in/en/privacy/privacy-central.html"
+		}
+	]
+}
+
+##################################################
+### Create induction section for brand
+##################################################
+POST {{api_url}}/brands/{{brandId}}/induction/sections
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Name": "Product/process knowledge (2.5 hrs to complete)",
+	"Items": [
+		{
+			"Name": "Complete guide to troubleshooting using HP diagnostics tools",
+			"Source": "https://assets.solvnow.com/hp/COMPLETE+GUIDE+TO+TROUBLESHOOTING+USING+HP+DIAGNOSTICS+TOOLS.pdf"
+		},
+		{
+			"Name": "Troubleshooting common issues",
+			"Source": "https://assets.solvnow.com/hp/TROUBLESHOOTING+COMMON+ISSUES.pdf"
+		},
+		{
+			"Name": "Audio",
+			"Source": "https://assets.solvnow.com/hp/Audio.pdf"
+		},
+		{
+			"Name": "CPU",
+			"Source": "https://assets.solvnow.com/hp/Central+Processing+Unit.pdf"
+		},
+		{
+			"Name": "Display",
+			"Source": "https://assets.solvnow.com/hp/Display.pdf"
+		},
+		{
+			"Name": "Graphics",
+			"Source": "https://assets.solvnow.com/hp/Graphics.pdf"
+		},
+		{
+			"Name": "Input and output",
+			"Source": "https://assets.solvnow.com/hp/Input%26Output.pdf"
+		},
+		{
+			"Name": "Memory",
+			"Source": "https://assets.solvnow.com/hp/Memory.pdf"
+		},
+		{
+			"Name": "Power",
+			"Source": "https://assets.solvnow.com/hp/Power.pdf"
+		},
+		{
+			"Name": "Storage",
+			"Source": "https://assets.solvnow.com/hp/Storage.pdf"
+		},
+		{
+			"Name": "Networking fundamentals",
+			"Source": "https://assets.solvnow.com/hp/Networking+Fundamentals.pdf"
+		},
+		{
+			"Name": "Windows 10 update",
+			"Source": "https://assets.solvnow.com/hp/Windows+10+May+2020+Update+Final.pdf"
+		}
+	]
+}
+
+
+##################################################
+### Create induction section for brand
+##################################################
+POST {{api_url}}/brands/{{brandId}}/induction/sections
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Name": "Additional links",
+	"Items": [
+		{
+			"Name": "Laptop PC teardown",
+			"Source": "https://www.youtube.com/watch?v=uDFgqXlLaY4"
+		},
+		{
+			"Name": "Desktop PC teardown",
+			"Source": "https://www.youtube.com/watch?v=2U_gz5-7j8o"
+		},
+		{
+			"Name": "Unit won’t start",
+			"Source": "https://www.youtube.com/watch?v=i0mKux2T2DU"
+		},
+		{
+			"Name": "Restoring bios with key press combination",
+			"Source": "https://www.youtube.com/watch?v=qpiGUojtr3E"
+		},
+		{
+			"Name": "Restoring bios with recovery flashdrive",
+			"Source": "https://www.youtube.com/watch?v=zjAZ0DTX3aI"
+		},
+		{
+			"Name": "Computer freezes during startup",
+			"Source": "https://supportvideos.ext.hp.com/detail/video/1253287062001/recovering-from-computer-freezes"
+		},
+		{
+			"Name": "Resetting windows 10",
+			"Source": "https://www.youtube.com/watch?v=aLLNtQQZ3AE"
+		},
+		{
+			"Name": "UEFI test",
+			"Source": "https://www.youtube.com/watch?v=pQYPYiBYxJE"
+		},
+		{
+			"Name": "Cloud recovery",
+			"Source": "https://www.youtube.com/watch?v=P7AwuKNJKS4"
+		},
+		{
+			"Name": "Black screen",
+			"Source": "https://supportvideos.ext.hp.com/detail/video/4251920134001/how-to-fix-an-hp-laptop-with-a-black-screen"
+		},
+		{
+			"Name": "Bios default consumer PC",
+			"Source": "https://supportvideos.ext.hp.com/detail/video/4306123709001/restoring-the-bios-default-settings"
+		},
+		{
+			"Name": "Bios simulator",
+			"Source": "http://h10032.www1.hp.com/ctg/Manual/c06534544"
+		}
+	]
+}

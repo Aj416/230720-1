@@ -1,0 +1,118 @@
+version: "3.5"
+services:
+
+  solv.api:
+    container_name: solv.backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=docker
+      - ASPNETCORE_URLS=http://*:5000
+      - AWS_CONFIG_FILE=/root/.aws/config
+    build:
+      context: ../src
+      dockerfile: Tigerspike.Solv.Api/Dockerfile.local
+    ports:
+      - "5000:5000"
+    networks:
+      - solv
+
+  solv.notification:
+    container_name: solv.notification
+    environment:
+      - ASPNETCORE_ENVIRONMENT=docker
+      - ASPNETCORE_URLS=http://*:5100
+      - AWS_CONFIG_FILE=/root/.aws/config
+    build:
+      context: ../src
+      dockerfile: Services/Notification/Tigerspike.Solv.Services.Notification/Dockerfile.local
+    ports:
+      - "5100:5100"
+    networks:
+      - solv
+
+  solv.fraud:
+    container_name: solv.fraud
+    environment:
+      - ASPNETCORE_ENVIRONMENT=docker
+      - ASPNETCORE_URLS=http://*:5200
+      - AWS_CONFIG_FILE=/root/.aws/config
+    build:
+      context: ../src
+      dockerfile: Services/Fraud/Tigerspike.Solv.Services.Fraud/Dockerfile.local
+    ports:
+      - "5200:5200"
+    networks:
+      - solv
+
+  solv.webhook:
+    container_name: solv.webhook
+    environment:
+      - ASPNETCORE_ENVIRONMENT=docker
+      - ASPNETCORE_URLS=http://*:5300
+      - AWS_CONFIG_FILE=/root/.aws/config
+    build:
+      context: ../src
+      dockerfile: Services/WebHook/Tigerspike.Solv.Services.WebHook/Dockerfile.local
+    ports:
+      - "5300:5300"
+    networks:
+      - solv
+
+  solv.chat:
+    container_name: solv.chat
+    environment:
+      - ASPNETCORE_ENVIRONMENT=docker
+      - ASPNETCORE_URLS=http://*:5400
+      - AWS_CONFIG_FILE=/root/.aws/config
+    build:
+      context: ../src
+      dockerfile: Services/Chat/Tigerspike.Solv.Services.Chat/Dockerfile.local
+    ports:
+      - "5400:5400"
+    networks:
+      - solv
+
+  solv.invoicing:
+    container_name: solv.invoicing
+    environment:
+      - ASPNETCORE_ENVIRONMENT=docker
+      - ASPNETCORE_URLS=http://*:5500
+      - AWS_CONFIG_FILE=/root/.aws/config
+    build:
+      context: ../src
+      dockerfile: Services/Invoicing/Tigerspike.Solv.Services.Invoicing/Dockerfile.local
+    ports:
+      - "5500:5500"
+    networks:
+      - solv
+
+  solv.identityVerification:
+    container_name: solv.identityVerification
+    environment:
+      - ASPNETCORE_ENVIRONMENT=docker
+      - ASPNETCORE_URLS=http://*:5700
+      - AWS_CONFIG_FILE=/root/.aws/config
+    build:
+      context: ../src
+      dockerfile: Services/Chat/Tigerspike.Solv.Services.IdentityVerification/Dockerfile.local
+    ports:
+      - "5700:5700"
+    networks:
+      - solv
+        
+  solv.brand:
+    container_name: solv.brand
+    environment:
+      - ASPNETCORE_ENVIRONMENT=docker
+      - ASPNETCORE_URLS=http://*:5800
+      - AWS_CONFIG_FILE=/root/.aws/config
+    build:
+      context: ../src
+      dockerfile: Services/Brand/Tigerspike.Solv.Services.Brand/Dockerfile.local
+    ports:
+      - "5800:5800"
+    networks:
+      - solv
+
+networks:
+  solv:
+    name: solv

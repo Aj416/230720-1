@@ -1,0 +1,1800 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  SolvNow infrastructure managed by Tigerspike.
+  This template is used to launch a stack for Containers.
+  Check Docs for more details.
+
+
+#Parameters section, feeds from parameters files. Some default values are here just in case.
+Parameters:
+  pEnvName:
+    Type: String
+  pDBName:
+    Type: String
+    Default: "solv"
+  pVarEnvName:
+    Type: String
+  pCostCenter:
+    Type: String
+  pALBSecurityGroup:
+    Type: String
+  pContainersSecurityGroup:
+    Type: String
+  pVpcId:
+    Type: String
+  pALBSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: "The Subnets Ids that the ALB should attach to, usually Public subnets."
+  pAlbSSLCert:
+    Type: String
+  pTaskSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: "The Subnets Ids that containers should be placed in, usually Private subnets."
+  pRootHostedZoneName:
+    Type: String
+    Description: "The Hosted Zone Name for the root domain in Route53."
+  pExecutionRole:
+    Type: String
+  pTaskRole:
+    Type: String
+  pIsProd:
+    Type: String
+    Default: "false"
+    Description: "Create Prod resources, e.g. MultiAZ and higher specs when applicable."
+  pDockerImage:
+    Type: String
+    Description: "The Docker Image for the containers."
+  pDockerImageNotification:
+    Type: String
+    Description: "The Docker Image for the containers Notifications."
+  pDockerImageFraud:
+    Type: String
+    Description: "The Docker Image for the containers Fraud."
+  pDockerImageChat:
+    Type: String
+    Description: "The Docker Image for the containers Chat."
+  pDockerImageWebHook:
+    Type: String
+    Description: "The Docker Image for the containers WebHook."
+  pDockerImageInvoicing:
+    Type: String
+    Description: "The Docker Image for the containers Invoicing."
+  pDockerImageQuartz:
+    Type: String
+    Description: "The Docker Image for the containers Quartz."
+  pDockerImageIdentityVerification:
+    Type: String
+    Description: "The Docker Image for the containers Quartz."
+  pTasksDesiredCount:
+    Type: String
+    Description: "The DesiredCount of simultaneous tasks that you want to run on the cluster."
+    Default: "1"
+  pTasksDesiredCountFraud:
+    Type: String
+    Description: "The DesiredCount of simultaneous tasks that you want to run on the cluster."
+    Default: "1"
+  pTasksDesiredCountChat:
+    Type: String
+    Description: "The DesiredCount of simultaneous tasks that you want to run on the cluster."
+    Default: "1"
+  pTasksDesiredCountWebHook:
+    Type: String
+    Description: "The DesiredCount of simultaneous tasks that you want to run on the cluster."
+    Default: "1"
+  pTasksDesiredCountInvoicing:
+    Type: String
+    Description: "The DesiredCount of simultaneous tasks that you want to run on the cluster."
+    Default: "1"
+  pTasksDesiredCountQuartz:
+    Type: String
+    Description: "The DesiredCount of simultaneous tasks that you want to run on the cluster."
+    Default: "1"
+  pTasksDesiredCountIdentityVerification:
+    Type: String
+    Description: "The DesiredCount of simultaneous tasks that you want to run on the cluster."
+    Default: "1"
+  pTaskMaxCount:
+    Type: String
+    Description: "The Max Count of simultaneous tasks that you can scale to when needed."
+    Default: "3"
+  pTaskCPU:
+    Type: String
+    AllowedValues: [".25vCPU",".5vCPU","1vCPU","2vCPU"]
+    Description: "The desired containers vCPU. Note for the vCPU value selected, only certain Memory values will be allowed. Check here: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-cpu-memory-error.html"
+  pTaskMemory:
+    Type: String
+    AllowedValues: ["0.5GB","1GB","2GB","3GB","4GB","6GB","8GB"]
+    Description: "The desired containers Memory. Note only certain Memory values are available for the vCPU selected. E.g. .25vCPU (0.5GB, 1GB, 2GB) .5vCPU (1GB, 2GB, 3GB, 4GB) 1vCPU (2GB ~ 8GB) 2vCPU (4GB ~ 16GB) etc."
+  pHealthCheckPath:
+    Type: String
+  pContainersPort:
+    Type: String
+    Description: "The ALB HealthCheckPort and the containers port."
+  pContainersPortNotification:
+    Type: String
+    Description: "The ALB HealthCheckPort and the containers port."
+  pContainersPortFraud:
+    Type: String
+    Description: "The ALB HealthCheckPort and the containers port."
+  pContainersPortChat:
+    Type: String
+    Description: "The ALB HealthCheckPort and the containers port."
+  pContainersPortWebHook:
+    Type: String
+    Description: "The ALB HealthCheckPort and the containers port."
+  pContainersPortInvoicing:
+    Type: String
+    Description: "The ALB HealthCheckPort and the containers port."
+  pContainersPortIdentityVerification:
+    Type: String
+    Description: "The ALB HealthCheckPort and the containers port."
+  pHealthHttpCode:
+    Type: String
+  pBastionSg:
+    Type: String
+    Description: "The VPN/Bastion server security group ID."
+    Default: ""
+  pMinHealthyContainersPercent:
+    Type: String
+    Default: "100"
+  pHealthCheckGracePeriod:
+    Type: String
+    Default: "120"
+  pServiceScalingRole:
+    Type: String
+  pScalingCoolDown:
+    Type: String
+    Default: "60"
+  pScalingThreshold:
+    Type: String
+    Default: "75.0"
+
+
+#Conditions section, feeds from parameters to output conditions.
+Conditions:
+  cIsProd: !Equals [!Ref pIsProd, "true"]
+  cIsNotProd: !Not [!Equals [!Ref pIsProd, "true"]]
+  cIsNotDev: !Not [!Equals [!Ref pVarEnvName, "dev"]]
+  cBastionAccess: !Not [!Equals [!Ref pBastionSg, ""]]
+
+
+#Resources section, calls AWS resources to create them based on properties defined either inline, from parameters, or from conditions.
+Resources:
+
+#Below creates CloudWatch Logs Group
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${pEnvName}-Backend-Container-logs
+      RetentionInDays: !If [cIsProd, 90, 14]
+
+#Below create ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub ${pEnvName}-Backend-Cluster
+
+#Below create Application Load Balancer, TargetGroup and the required resources
+  ALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-ALB
+      Subnets: !Ref pALBSubnets
+      SecurityGroups:
+        - !Ref pALBSecurityGroup
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: !Sub solvnow-logs-${pVarEnvName}
+        - Key: access_logs.s3.prefix
+          Value: ALB-AccessLogs
+  ALBInternal:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-ALB-Internal
+      Scheme: internal
+      Subnets: !Ref pALBSubnets
+      SecurityGroups:
+        - !Ref pALBSecurityGroup
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: !Sub solvnow-logs-${pVarEnvName}
+        - Key: access_logs.s3.prefix
+          Value: ALB-AccessLogs
+  ALBInternalFraud:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-ALB-Fraud
+      Scheme: internal
+      Subnets: !Ref pALBSubnets
+      SecurityGroups:
+        - !Ref pALBSecurityGroup
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: !Sub solvnow-logs-${pVarEnvName}
+        - Key: access_logs.s3.prefix
+          Value: ALB-AccessLogs
+  ALBInternalChat:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-ALB-Chat
+      Scheme: internal
+      Subnets: !Ref pALBSubnets
+      SecurityGroups:
+        - !Ref pALBSecurityGroup
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: !Sub solvnow-logs-${pVarEnvName}
+        - Key: access_logs.s3.prefix
+          Value: ALB-AccessLogs
+  ALBInternalWebHook:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-ALB-WebHook
+      Scheme: internal
+      Subnets: !Ref pALBSubnets
+      SecurityGroups:
+        - !Ref pALBSecurityGroup
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: !Sub solvnow-logs-${pVarEnvName}
+        - Key: access_logs.s3.prefix
+          Value: ALB-AccessLogs
+  ALBInternalInvoicing:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-ALB-Invoicing
+      Scheme: internal
+      Subnets: !Ref pALBSubnets
+      SecurityGroups:
+        - !Ref pALBSecurityGroup
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: !Sub solvnow-logs-${pVarEnvName}
+        - Key: access_logs.s3.prefix
+          Value: ALB-AccessLogs
+  ALBInternalIdentityVerification:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-ALB-IdentityVer
+      Scheme: internal
+      Subnets: !Ref pALBSubnets
+      SecurityGroups:
+        - !Ref pALBSecurityGroup
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value: !Sub solvnow-logs-${pVarEnvName}
+        - Key: access_logs.s3.prefix
+          Value: ALB-AccessLogs
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: ALB
+    Properties:
+      Name: !Sub ${pEnvName}-Backend
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: !Ref pContainersPort
+      HealthCheckPath: !Ref pHealthCheckPath
+      HealthCheckIntervalSeconds: 180
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      Matcher:
+        HttpCode: !Ref pHealthHttpCode
+      Port: !Ref pContainersPort
+      Protocol: HTTP
+      VpcId: !Ref pVpcId
+  ALBTargetGroupNotification:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: ALB
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-Notification
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: !Ref pContainersPortNotification
+      HealthCheckPath: !Ref pHealthCheckPath
+      HealthCheckIntervalSeconds: 180
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      Matcher:
+        HttpCode: !Ref pHealthHttpCode
+      Port: !Ref pContainersPort
+      Protocol: HTTP
+      VpcId: !Ref pVpcId
+  ALBTargetGroupFraud:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: ALB
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-Fraud
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: !Ref pContainersPortFraud
+      HealthCheckPath: !Ref pHealthCheckPath
+      HealthCheckIntervalSeconds: 180
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      Matcher:
+        HttpCode: !Ref pHealthHttpCode
+      Port: !Ref pContainersPortFraud
+      Protocol: HTTP
+      VpcId: !Ref pVpcId
+  ALBTargetGroupChat:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: ALB
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-Chat
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: !Ref pContainersPortChat
+      HealthCheckPath: !Ref pHealthCheckPath
+      HealthCheckIntervalSeconds: 180
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      Matcher:
+        HttpCode: !Ref pHealthHttpCode
+      Port: !Ref pContainersPortChat
+      Protocol: HTTP
+      VpcId: !Ref pVpcId
+  ALBTargetGroupWebHook:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: ALB
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-WebHook
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: !Ref pContainersPortWebHook
+      HealthCheckPath: !Ref pHealthCheckPath
+      HealthCheckIntervalSeconds: 180
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      Matcher:
+        HttpCode: !Ref pHealthHttpCode
+      Port: !Ref pContainersPortWebHook
+      Protocol: HTTP
+      VpcId: !Ref pVpcId
+  ALBTargetGroupInvoicing:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: ALB
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-Invoicing
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: !Ref pContainersPortInvoicing
+      HealthCheckPath: !Ref pHealthCheckPath
+      HealthCheckIntervalSeconds: 180
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      Matcher:
+        HttpCode: !Ref pHealthHttpCode
+      Port: !Ref pContainersPortInvoicing
+      Protocol: HTTP
+      VpcId: !Ref pVpcId
+  ALBTargetGroupIdentityVerification:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: ALB
+    Properties:
+      Name: !Sub ${pEnvName}-Backend-IdentityVer
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: !Ref pContainersPortIdentityVerification
+      HealthCheckPath: !Ref pHealthCheckPath
+      HealthCheckIntervalSeconds: 180
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      Matcher:
+        HttpCode: !Ref pHealthHttpCode
+      Port: !Ref pContainersPortIdentityVerification
+      Protocol: HTTP
+      VpcId: !Ref pVpcId
+  ALBListenerHTTPNotification:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupNotification
+      LoadBalancerArn: !Ref ALBInternal
+      Port: '80'
+      Protocol: HTTP
+  ALBListenerHTTPFraud:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupFraud
+      LoadBalancerArn: !Ref ALBInternalFraud
+      Port: '80'
+      Protocol: HTTP
+  ALBListenerHTTPChat:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupChat
+      LoadBalancerArn: !Ref ALBInternalChat
+      Port: '80'
+      Protocol: HTTP
+  ALBListenerHTTPWebHook:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupWebHook
+      LoadBalancerArn: !Ref ALBInternalWebHook
+      Port: '80'
+      Protocol: HTTP
+  ALBListenerHTTPInvoicing:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupInvoicing
+      LoadBalancerArn: !Ref ALBInternalInvoicing
+      Port: '80'
+      Protocol: HTTP
+  ALBListenerHTTPIdentityVerification:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupIdentityVerification
+      LoadBalancerArn: !Ref ALBInternalIdentityVerification
+      Port: '80'
+      Protocol: HTTP
+  ALBListenerHTTP:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroup
+      LoadBalancerArn: !Ref ALB
+      Port: '80'
+      Protocol: HTTP
+  ALBListenerHTTPSNotification:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      Certificates:
+        - CertificateArn: !Ref pAlbSSLCert
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupNotification
+      LoadBalancerArn: !Ref ALBInternal
+      Port: '443'
+      Protocol: HTTPS
+  ALBListenerHTTPSFraud:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      Certificates:
+        - CertificateArn: !Ref pAlbSSLCert
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupFraud
+      LoadBalancerArn: !Ref ALBInternalFraud
+      Port: '443'
+      Protocol: HTTPS
+  ALBListenerHTTPSChat:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      Certificates:
+        - CertificateArn: !Ref pAlbSSLCert
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupChat
+      LoadBalancerArn: !Ref ALBInternalChat
+      Port: '443'
+      Protocol: HTTPS
+  ALBListenerHTTPSWebHook:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      Certificates:
+        - CertificateArn: !Ref pAlbSSLCert
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupWebHook
+      LoadBalancerArn: !Ref ALBInternalWebHook
+      Port: '443'
+      Protocol: HTTPS
+  ALBListenerHTTPSInvoicing:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      Certificates:
+        - CertificateArn: !Ref pAlbSSLCert
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupInvoicing
+      LoadBalancerArn: !Ref ALBInternalInvoicing
+      Port: '443'
+      Protocol: HTTPS
+  ALBListenerHTTPSIdentityVerification:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      Certificates:
+        - CertificateArn: !Ref pAlbSSLCert
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupIdentityVerification
+      LoadBalancerArn: !Ref ALBInternalIdentityVerification
+      Port: '443'
+      Protocol: HTTPS
+  ALBListenerHTTPS:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      Certificates:
+        - CertificateArn: !Ref pAlbSSLCert
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroup
+      LoadBalancerArn: !Ref ALB
+      Port: '443'
+      Protocol: HTTPS
+  ALBDNS:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub ${pRootHostedZoneName}.
+      AliasTarget:
+        HostedZoneId: !GetAtt ALB.CanonicalHostedZoneID
+        DNSName: !GetAtt ALB.DNSName
+      Name: !Sub ${pEnvName}-api.${pRootHostedZoneName}.
+      Type: A
+  ALBDNSInternal:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub ${pRootHostedZoneName}.
+      AliasTarget:
+        HostedZoneId: !GetAtt ALBInternal.CanonicalHostedZoneID
+        DNSName: !GetAtt ALBInternal.DNSName
+      Name: !Sub ${pEnvName}-Notification.service.${pRootHostedZoneName}.
+      Type: A
+  ALBDNSInternalFraud:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub ${pRootHostedZoneName}.
+      AliasTarget:
+        HostedZoneId: !GetAtt ALBInternalFraud.CanonicalHostedZoneID
+        DNSName: !GetAtt ALBInternalFraud.DNSName
+      Name: !Sub ${pEnvName}-Fraud.service.${pRootHostedZoneName}.
+      Type: A
+  ALBDNSInternalChat:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub ${pRootHostedZoneName}.
+      AliasTarget:
+        HostedZoneId: !GetAtt ALBInternalChat.CanonicalHostedZoneID
+        DNSName: !GetAtt ALBInternalChat.DNSName
+      Name: !Sub ${pEnvName}-Chat.service.${pRootHostedZoneName}.
+      Type: A
+  ALBDNSInternalWebHook:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub ${pRootHostedZoneName}.
+      AliasTarget:
+        HostedZoneId: !GetAtt ALBInternalWebHook.CanonicalHostedZoneID
+        DNSName: !GetAtt ALBInternalWebHook.DNSName
+      Name: !Sub ${pEnvName}-WebHook.service.${pRootHostedZoneName}.
+      Type: A
+  ALBDNSInternalInvoicing:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub ${pRootHostedZoneName}.
+      AliasTarget:
+        HostedZoneId: !GetAtt ALBInternalInvoicing.CanonicalHostedZoneID
+        DNSName: !GetAtt ALBInternalInvoicing.DNSName
+      Name: !Sub ${pEnvName}-Invoicing.service.${pRootHostedZoneName}.
+      Type: A
+  ALBDNSInternalIdentityVerification:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub ${pRootHostedZoneName}.
+      AliasTarget:
+        HostedZoneId: !GetAtt ALBInternalIdentityVerification.CanonicalHostedZoneID
+        DNSName: !GetAtt ALBInternalIdentityVerification.DNSName
+      Name: !Sub ${pEnvName}-IdentityVerification.service.${pRootHostedZoneName}.
+      Type: A
+  ALBDNSProd:
+    Type: AWS::Route53::RecordSet
+    Condition: cIsProd
+    DependsOn: ALBDNS
+    Properties:
+      HostedZoneName: !Sub ${pRootHostedZoneName}.
+      ResourceRecords:
+        - !Sub ${pEnvName}-api.${pRootHostedZoneName}.
+      Name: !Sub api.${pRootHostedZoneName}.
+      Type: CNAME
+      TTL: 900
+
+#Below create multiple Task Definitions for API to describe Docker containers
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${pEnvName}-Api-Container-logs
+      RetentionInDays: !If [cIsProd, 90, 14]
+  ApiTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ExecutionRoleArn: !Ref pExecutionRole
+      Family: !Sub ${pEnvName}-Backend-Family
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref pTaskRole
+      Cpu: !Ref pTaskCPU
+      Memory: !Ref pTaskMemory
+      ContainerDefinitions:
+        - Name: !Sub ${pEnvName}-Backend-Api-Task
+          Image: !Ref pDockerImage
+          MemoryReservation: 512
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ApiLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Sub "${pEnvName}-api"
+          EntryPoint:
+            - "bash"
+            - "/start-api.sh"
+          PortMappings:
+            - ContainerPort: !Ref pContainersPort
+          Ulimits:
+            - Name: nofile
+              HardLimit: 524288
+              SoftLimit: 524288
+          Environment:
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: !Ref pVarEnvName
+            - Name: AWS__Region
+              Value: !Ref "AWS::Region"
+            - Name: AWS.Logging__LogGroup
+              Value: !Ref ApiLogGroup
+            - Name: AWS.Logging__Region
+              Value: !Ref "AWS::Region"
+            - Name: CORECLR_ENABLE_PROFILING
+              Value: "1"
+            - Name: CORECLR_PROFILER
+              Value: "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}"
+            - Name: CORECLR_NEWRELIC_HOME
+              Value: /usr/local/newrelic-netcore20-agent
+            - Name: CORECLR_PROFILER_PATH
+              Value: /usr/local/newrelic-netcore20-agent/libNewRelicProfiler.so
+            - Name: NEW_RELIC_PROCESS_HOST_DISPLAY_NAME
+              Value: !Ref ECSCluster
+            - Name: NEW_RELIC_APP_NAME
+              Value: !Sub ${pVarEnvName}-Solv-Backend
+            - Name: DatabaseSettings__Database
+              Value: !Ref pDBName
+            - Name: Bus__Sqs__ServiceUrl
+              Value: !Sub https://sqs.${AWS::Region}.amazonaws.com
+            - Name: Bus__Sns__ServiceUrl
+              Value: !Sub https://sns.${AWS::Region}.amazonaws.com
+            - Name: Bus__Queues__Schedule
+              Value: !Sub ${pVarEnvName}-schedule-sqs
+            - Name: Bus__Queues__Ticket
+              Value: !Sub ${pVarEnvName}-ticket-sqs
+            - Name: Bus__Queues__Webhook
+              Value: !Sub ${pVarEnvName}-webhook-sqs
+            - Name: Bus__Queues__Invoicing
+              Value: !Sub ${pVarEnvName}-invoicing-sqs
+          Secrets:
+            - Name: Bus__AccessKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/AccessKey
+            - Name: Bus__SecretKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/SecretKey
+            - Name: NEW_RELIC_LICENSE_KEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/NEW_RELIC_LICENSE_KEY
+            - Name: servicestack__license
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/servicestack/license
+            - Name: DatabaseSettings__Server
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Server
+            - Name: DatabaseSettings__User
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/User
+            - Name: DatabaseSettings__Password
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Password
+            - Name: Redis__ReadWriteHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadWriteHosts
+            - Name: Redis__ReadOnlyHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadOnlyHosts
+            - Name: ElasticSearch__Uri
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/ElasticSearch/Uri
+            - Name: DynamoDb__Tables__Conversation
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Conversation
+            - Name: DynamoDb__Tables__Message
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Message
+            - Name: DynamoDb__Tables__ScheduledJob
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/ScheduledJob
+            - Name: DynamoDb__Tables__MessageWhitelist
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/MessageWhitelist
+            - Name: UploadSettings__BucketName
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/UploadSettings/BucketName
+
+#Below creates a Notification task definition to describe Docker containers
+  NotificationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${pEnvName}-Notification-Container-logs
+      RetentionInDays: !If [cIsProd, 90, 14]
+  NotificationTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ExecutionRoleArn: !Ref pExecutionRole
+      Family: !Sub ${pEnvName}-Backend-Family
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref pTaskRole
+      Cpu: !Ref pTaskCPU
+      Memory: !Ref pTaskMemory
+      ContainerDefinitions:
+        - Name: !Sub ${pEnvName}-Backend-Notification-Task
+          Image: !Ref pDockerImageNotification
+          MemoryReservation: 512
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref NotificationLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Sub "${pEnvName}-notification"
+          EntryPoint:
+            - "dotnet"
+            - "Tigerspike.Solv.Services.Notification.dll"
+          PortMappings:
+            - ContainerPort: 80
+          Ulimits:
+            - Name: nofile
+              HardLimit: 524288
+              SoftLimit: 524288
+          PortMappings:
+            - ContainerPort: !Ref pContainersPortNotification
+          Environment:
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: !Ref pVarEnvName
+            - Name: AWS__Region
+              Value: !Ref "AWS::Region"
+            - Name: AWS.Logging__LogGroup
+              Value: !Ref NotificationLogGroup
+            - Name: AWS.Logging__Region
+              Value: !Ref "AWS::Region"
+            - Name: CORECLR_ENABLE_PROFILING
+              Value: "1"
+            - Name: CORECLR_PROFILER
+              Value: "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}"
+            - Name: CORECLR_NEWRELIC_HOME
+              Value: /usr/local/newrelic-netcore20-agent
+            - Name: CORECLR_PROFILER_PATH
+              Value: /usr/local/newrelic-netcore20-agent/libNewRelicProfiler.so
+            - Name: NEW_RELIC_PROCESS_HOST_DISPLAY_NAME
+              Value: !Ref ECSCluster
+            - Name: NEW_RELIC_APP_NAME
+              Value: !Sub ${pVarEnvName}-Solv-Backend
+            - Name: DatabaseSettings__Database
+              Value: !Ref pDBName
+            - Name: Bus__Sqs__ServiceUrl
+              Value: !Sub https://sqs.${AWS::Region}.amazonaws.com
+            - Name: Bus__Sns__ServiceUrl
+              Value: !Sub https://sns.${AWS::Region}.amazonaws.com
+            - Name: Bus__Queues__Schedule
+              Value: !Sub ${pVarEnvName}-schedule-sqs
+            - Name: Bus__Queues__Ticket
+              Value: !Sub ${pVarEnvName}-ticket-sqs
+            - Name: Bus__Queues__Webhook
+              Value: !Sub ${pVarEnvName}-webhook-sqs
+            - Name: Bus__Queues__Invoicing
+              Value: !Sub ${pVarEnvName}-invoicing-sqs
+            - Name: Bus__Queues__Email
+              Value: !Sub ${pVarEnvName}-email-sqs
+          Secrets:
+            - Name: Bus__AccessKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/AccessKey
+            - Name: Bus__SecretKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/SecretKey
+            - Name: NEW_RELIC_LICENSE_KEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/NEW_RELIC_LICENSE_KEY
+            - Name: servicestack__license
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/servicestack/license
+            - Name: DatabaseSettings__Server
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Server
+            - Name: DatabaseSettings__User
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/User
+            - Name: DatabaseSettings__Password
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Password
+            - Name: Redis__ReadWriteHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadWriteHosts
+            - Name: Redis__ReadOnlyHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadOnlyHosts
+            - Name: ElasticSearch__Uri
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/ElasticSearch/Uri
+            - Name: DynamoDb__Tables__Conversation
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Conversation
+            - Name: DynamoDb__Tables__Message
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Message
+            - Name: DynamoDb__Tables__ScheduledJob
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/ScheduledJob
+            - Name: UploadSettings__BucketName
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/UploadSettings/BucketName
+
+#Below creates a Fraud task definition to describe Docker containers
+  FraudLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${pEnvName}-Fraud-Container-logs
+      RetentionInDays: !If [cIsProd, 90, 14]
+  FraudTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ExecutionRoleArn: !Ref pExecutionRole
+      Family: !Sub ${pEnvName}-Backend-Family
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref pTaskRole
+      Cpu: !Ref pTaskCPU
+      Memory: !Ref pTaskMemory
+      ContainerDefinitions:
+        - Name: !Sub ${pEnvName}-Backend-Fraud-Task
+          Image: !Ref pDockerImageFraud
+          MemoryReservation: 512
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref FraudLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Sub "${pEnvName}-fraud"
+          EntryPoint:
+            - "dotnet"
+            - "Tigerspike.Solv.Services.Fraud.dll"
+          PortMappings:
+            - ContainerPort: 80
+          Ulimits:
+            - Name: nofile
+              HardLimit: 524288
+              SoftLimit: 524288
+          PortMappings:
+            - ContainerPort: !Ref pContainersPortFraud
+          Environment:
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: !Ref pVarEnvName
+            - Name: AWS__Region
+              Value: !Ref "AWS::Region"
+            - Name: AWS.Logging__LogGroup
+              Value: !Ref FraudLogGroup
+            - Name: AWS.Logging__Region
+              Value: !Ref "AWS::Region"
+            - Name: CORECLR_ENABLE_PROFILING
+              Value: "1"
+            - Name: CORECLR_PROFILER
+              Value: "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}"
+            - Name: CORECLR_NEWRELIC_HOME
+              Value: /usr/local/newrelic-netcore20-agent
+            - Name: CORECLR_PROFILER_PATH
+              Value: /usr/local/newrelic-netcore20-agent/libNewRelicProfiler.so
+            - Name: NEW_RELIC_PROCESS_HOST_DISPLAY_NAME
+              Value: !Ref ECSCluster
+            - Name: NEW_RELIC_APP_NAME
+              Value: !Sub ${pVarEnvName}-Solv-Backend
+            - Name: DatabaseSettings__Database
+              Value: !Ref pDBName
+            - Name: Bus__Sqs__ServiceUrl
+              Value: !Sub https://sqs.${AWS::Region}.amazonaws.com
+            - Name: Bus__Sns__ServiceUrl
+              Value: !Sub https://sns.${AWS::Region}.amazonaws.com
+            - Name: Bus__Queues__Schedule
+              Value: !Sub ${pVarEnvName}-schedule-sqs
+            - Name: Bus__Queues__Ticket
+              Value: !Sub ${pVarEnvName}-ticket-sqs
+            - Name: Bus__Queues__Webhook
+              Value: !Sub ${pVarEnvName}-webhook-sqs
+            - Name: Bus__Queues__Invoicing
+              Value: !Sub ${pVarEnvName}-invoicing-sqs
+            - Name: Bus__Queues__Email
+              Value: !Sub ${pVarEnvName}-email-sqs
+          Secrets:
+            - Name: Bus__AccessKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/AccessKey
+            - Name: Bus__SecretKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/SecretKey
+            - Name: NEW_RELIC_LICENSE_KEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/NEW_RELIC_LICENSE_KEY
+            - Name: servicestack__license
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/servicestack/license
+            - Name: DatabaseSettings__Server
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Server
+            - Name: DatabaseSettings__User
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/User
+            - Name: DatabaseSettings__Password
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Password
+            - Name: Redis__ReadWriteHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadWriteHosts
+            - Name: Redis__ReadOnlyHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadOnlyHosts
+            - Name: ElasticSearch__Uri
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/ElasticSearch/Uri
+            - Name: DynamoDb__Tables__Conversation
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Conversation
+            - Name: DynamoDb__Tables__Message
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Message
+            - Name: DynamoDb__Tables__ScheduledJob
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/ScheduledJob
+            - Name: UploadSettings__BucketName
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/UploadSettings/BucketName
+
+#Below creates a Chat task definition to describe Docker containers
+  ChatLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${pEnvName}-Chat-Container-logs
+      RetentionInDays: !If [cIsProd, 90, 14]
+  ChatTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ExecutionRoleArn: !Ref pExecutionRole
+      Family: !Sub ${pEnvName}-Backend-Family
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref pTaskRole
+      Cpu: !Ref pTaskCPU
+      Memory: !Ref pTaskMemory
+      ContainerDefinitions:
+        - Name: !Sub ${pEnvName}-Backend-Chat-Task
+          Image: !Ref pDockerImageChat
+          MemoryReservation: 512
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ChatLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Sub "${pEnvName}-chat"
+          EntryPoint:
+            - "dotnet"
+            - "Tigerspike.Solv.Services.Chat.dll"
+          PortMappings:
+            - ContainerPort: 80
+          Ulimits:
+            - Name: nofile
+              HardLimit: 524288
+              SoftLimit: 524288
+          PortMappings:
+            - ContainerPort: !Ref pContainersPortChat
+          Environment:
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: !Ref pVarEnvName
+            - Name: AWS__Region
+              Value: !Ref "AWS::Region"
+            - Name: AWS.Logging__LogGroup
+              Value: !Ref ChatLogGroup
+            - Name: AWS.Logging__Region
+              Value: !Ref "AWS::Region"
+            - Name: CORECLR_ENABLE_PROFILING
+              Value: "1"
+            - Name: CORECLR_PROFILER
+              Value: "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}"
+            - Name: CORECLR_NEWRELIC_HOME
+              Value: /usr/local/newrelic-netcore20-agent
+            - Name: CORECLR_PROFILER_PATH
+              Value: /usr/local/newrelic-netcore20-agent/libNewRelicProfiler.so
+            - Name: NEW_RELIC_PROCESS_HOST_DISPLAY_NAME
+              Value: !Ref ECSCluster
+            - Name: NEW_RELIC_APP_NAME
+              Value: !Sub ${pVarEnvName}-Solv-Backend
+            - Name: DatabaseSettings__Database
+              Value: !Ref pDBName
+            - Name: Bus__Sqs__ServiceUrl
+              Value: !Sub https://sqs.${AWS::Region}.amazonaws.com
+            - Name: Bus__Sns__ServiceUrl
+              Value: !Sub https://sns.${AWS::Region}.amazonaws.com
+            - Name: Bus__Queues__Schedule
+              Value: !Sub ${pVarEnvName}-schedule-sqs
+          Secrets:
+            - Name: Bus__AccessKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/AccessKey
+            - Name: Bus__SecretKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/SecretKey
+            - Name: NEW_RELIC_LICENSE_KEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/NEW_RELIC_LICENSE_KEY
+            - Name: servicestack__license
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/servicestack/license
+            - Name: DatabaseSettings__Server
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Server
+            - Name: DatabaseSettings__User
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/User
+            - Name: DatabaseSettings__Password
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Password
+            - Name: Redis__ReadWriteHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadWriteHosts
+            - Name: Redis__ReadOnlyHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadOnlyHosts
+            - Name: ElasticSearch__Uri
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/ElasticSearch/Uri
+            - Name: DynamoDb__Tables__Conversation
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Conversation
+            - Name: DynamoDb__Tables__Message
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Message
+            - Name: DynamoDb__Tables__MessageWhitelist
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/MessageWhitelist
+            - Name: DynamoDb__Tables__ScheduledJob
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/ScheduledJob
+
+##Below creates a WebHook task definition to describe Docker containers
+  WebHookLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${pEnvName}-WebHook-Container-logs
+      RetentionInDays: !If [cIsProd, 90, 14]
+  WebHookTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ExecutionRoleArn: !Ref pExecutionRole
+      Family: !Sub ${pEnvName}-Backend-Family
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref pTaskRole
+      Cpu: !Ref pTaskCPU
+      Memory: !Ref pTaskMemory
+      ContainerDefinitions:
+        - Name: !Sub ${pEnvName}-Backend-WebHook-Task
+          Image: !Ref pDockerImageWebHook
+          MemoryReservation: 512
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref WebHookLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Sub "${pEnvName}-webhook"
+          EntryPoint:
+            - "dotnet"
+            - "Tigerspike.Solv.Services.WebHook.dll"
+          PortMappings:
+            - ContainerPort: 80
+          Ulimits:
+            - Name: nofile
+              HardLimit: 524288
+              SoftLimit: 524288
+          PortMappings:
+            - ContainerPort: !Ref pContainersPortWebHook
+          Environment:
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: !Ref pVarEnvName
+            - Name: AWS__Region
+              Value: !Ref "AWS::Region"
+            - Name: AWS.Logging__LogGroup
+              Value: !Ref WebHookLogGroup
+            - Name: AWS.Logging__Region
+              Value: !Ref "AWS::Region"
+            - Name: CORECLR_ENABLE_PROFILING
+              Value: "1"
+            - Name: CORECLR_PROFILER
+              Value: "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}"
+            - Name: CORECLR_NEWRELIC_HOME
+              Value: /usr/local/newrelic-netcore20-agent
+            - Name: CORECLR_PROFILER_PATH
+              Value: /usr/local/newrelic-netcore20-agent/libNewRelicProfiler.so
+            - Name: NEW_RELIC_PROCESS_HOST_DISPLAY_NAME
+              Value: !Ref ECSCluster
+            - Name: NEW_RELIC_APP_NAME
+              Value: !Sub ${pVarEnvName}-Solv-Backend
+            - Name: DatabaseSettings__Database
+              Value: !Ref pDBName
+            - Name: Bus__Sqs__ServiceUrl
+              Value: !Sub https://sqs.${AWS::Region}.amazonaws.com
+            - Name: Bus__Sns__ServiceUrl
+              Value: !Sub https://sns.${AWS::Region}.amazonaws.com
+            - Name: Bus__Queues__Schedule
+              Value: !Sub ${pVarEnvName}-schedule-sqs
+            - Name: Bus__Queues__Ticket
+              Value: !Sub ${pVarEnvName}-ticket-sqs
+            - Name: Bus__Queues__Webhook
+              Value: !Sub ${pVarEnvName}-webhook-sqs
+            - Name: Bus__Queues__Invoicing
+              Value: !Sub ${pVarEnvName}-invoicing-sqs
+            - Name: Bus__Queues__Email
+              Value: !Sub ${pVarEnvName}-email-sqs
+          Secrets:
+            - Name: Bus__AccessKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/AccessKey
+            - Name: Bus__SecretKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/SecretKey
+            - Name: NEW_RELIC_LICENSE_KEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/NEW_RELIC_LICENSE_KEY
+            - Name: servicestack__license
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/servicestack/license
+            - Name: DatabaseSettings__Server
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Server
+            - Name: DatabaseSettings__User
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/User
+            - Name: DatabaseSettings__Password
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Password
+            - Name: Redis__ReadWriteHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadWriteHosts
+            - Name: Redis__ReadOnlyHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadOnlyHosts
+            - Name: ElasticSearch__Uri
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/ElasticSearch/Uri
+            - Name: DynamoDb__Tables__Conversation
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Conversation
+            - Name: DynamoDb__Tables__Message
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Message
+            - Name: DynamoDb__Tables__ScheduledJob
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/ScheduledJob
+            - Name: UploadSettings__BucketName
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/UploadSettings/BucketName
+
+##Below creates a Invoicing task definition to describe Docker containers
+  InvoiceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${pEnvName}-Invoicing-Container-logs
+      RetentionInDays: !If [cIsProd, 90, 14]
+  InvoicingTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ExecutionRoleArn: !Ref pExecutionRole
+      Family: !Sub ${pEnvName}-Backend-Family
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref pTaskRole
+      Cpu: !Ref pTaskCPU
+      Memory: !Ref pTaskMemory
+      ContainerDefinitions:
+        - Name: !Sub ${pEnvName}-Backend-Invoicing-Task
+          Image: !Ref pDockerImageInvoicing
+          MemoryReservation: 512
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref InvoiceLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Sub "${pEnvName}-invoice"
+          EntryPoint:
+            - "dotnet"
+            - "Tigerspike.Solv.Services.Invoicing.dll"
+          PortMappings:
+            - ContainerPort: 80
+          Ulimits:
+            - Name: nofile
+              HardLimit: 524288
+              SoftLimit: 524288
+          PortMappings:
+            - ContainerPort: !Ref pContainersPortInvoicing
+          Environment:
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: !Ref pVarEnvName
+            - Name: AWS__Region
+              Value: !Ref "AWS::Region"
+            - Name: AWS.Logging__LogGroup
+              Value: !Ref InvoiceLogGroup
+            - Name: AWS.Logging__Region
+              Value: !Ref "AWS::Region"
+            - Name: CORECLR_ENABLE_PROFILING
+              Value: "1"
+            - Name: CORECLR_PROFILER
+              Value: "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}"
+            - Name: CORECLR_NEWRELIC_HOME
+              Value: /usr/local/newrelic-netcore20-agent
+            - Name: CORECLR_PROFILER_PATH
+              Value: /usr/local/newrelic-netcore20-agent/libNewRelicProfiler.so
+            - Name: NEW_RELIC_PROCESS_HOST_DISPLAY_NAME
+              Value: !Ref ECSCluster
+            - Name: NEW_RELIC_APP_NAME
+              Value: !Sub ${pVarEnvName}-Solv-Backend
+            - Name: Bus__Sqs__ServiceUrl
+              Value: !Sub https://sqs.${AWS::Region}.amazonaws.com
+            - Name: Bus__Sns__ServiceUrl
+              Value: !Sub https://sns.${AWS::Region}.amazonaws.com
+            - Name: Bus__Queues__Schedule
+              Value: !Sub ${pVarEnvName}-schedule-sqs
+            - Name: Bus__Queues__Ticket
+              Value: !Sub ${pVarEnvName}-ticket-sqs
+            - Name: Bus__Queues__Webhook
+              Value: !Sub ${pVarEnvName}-webhook-sqs
+            - Name: Bus__Queues__Invoicing
+              Value: !Sub ${pVarEnvName}-invoicing-sqs
+            - Name: Bus__Queues__Email
+              Value: !Sub ${pVarEnvName}-email-sqs
+          Secrets:
+            - Name: Bus__AccessKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/AccessKey
+            - Name: Bus__SecretKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/SecretKey
+            - Name: NEW_RELIC_LICENSE_KEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/NEW_RELIC_LICENSE_KEY
+            - Name: servicestack__license
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/servicestack/license
+            - Name: DatabaseSettings__Server
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Server
+            - Name: DatabaseSettings__User
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/User
+            - Name: DatabaseSettings__Password
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Password
+            - Name: Redis__ReadWriteHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadWriteHosts
+            - Name: Redis__ReadOnlyHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadOnlyHosts
+            - Name: ElasticSearch__Uri
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/ElasticSearch/Uri
+            - Name: DynamoDb__Tables__Conversation
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Conversation
+            - Name: DynamoDb__Tables__Message
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Message
+            - Name: DynamoDb__Tables__ScheduledJob
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/ScheduledJob
+            - Name: UploadSettings__BucketName
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/UploadSettings/BucketName
+
+##Below creates a IdentityVerification task definition to describe Docker containers
+  IdentityVerificationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${pEnvName}-IdentityVer-Container-logs
+      RetentionInDays: !If [cIsProd, 90, 14]
+  IdentityVerificationTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ExecutionRoleArn: !Ref pExecutionRole
+      Family: !Sub ${pEnvName}-Backend-Family
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref pTaskRole
+      Cpu: !Ref pTaskCPU
+      Memory: !Ref pTaskMemory
+      ContainerDefinitions:
+        - Name: !Sub ${pEnvName}-Backend-IdentityVer-Task
+          Image: !Ref pDockerImageIdentityVerification
+          MemoryReservation: 512
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref IdentityVerificationLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Sub "${pEnvName}-identityverification"
+          EntryPoint:
+            - "dotnet"
+            - "Tigerspike.Solv.Services.IdentityVerification.dll"
+          PortMappings:
+            - ContainerPort: 80
+          Ulimits:
+            - Name: nofile
+              HardLimit: 524288
+              SoftLimit: 524288
+          PortMappings:
+            - ContainerPort: !Ref pContainersPortIdentityVerification
+          Environment:
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: !Ref pVarEnvName
+            - Name: AWS__Region
+              Value: !Ref "AWS::Region"
+            - Name: AWS.Logging__LogGroup
+              Value: !Ref IdentityVerificationLogGroup
+            - Name: AWS.Logging__Region
+              Value: !Ref "AWS::Region"
+            - Name: CORECLR_ENABLE_PROFILING
+              Value: "1"
+            - Name: CORECLR_PROFILER
+              Value: "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}"
+            - Name: CORECLR_NEWRELIC_HOME
+              Value: /usr/local/newrelic-netcore20-agent
+            - Name: CORECLR_PROFILER_PATH
+              Value: /usr/local/newrelic-netcore20-agent/libNewRelicProfiler.so
+            - Name: NEW_RELIC_PROCESS_HOST_DISPLAY_NAME
+              Value: !Ref ECSCluster
+            - Name: NEW_RELIC_APP_NAME
+              Value: !Sub ${pVarEnvName}-Solv-Backend
+            - Name: DatabaseSettings__Database
+              Value: !Ref pDBName
+            - Name: Bus__Sqs__ServiceUrl
+              Value: !Sub https://sqs.${AWS::Region}.amazonaws.com
+            - Name: Bus__Sns__ServiceUrl
+              Value: !Sub https://sns.${AWS::Region}.amazonaws.com
+            - Name: Bus__Queues__Schedule
+              Value: !Sub ${pVarEnvName}-schedule-sqs
+            - Name: Bus__Queues__Ticket
+              Value: !Sub ${pVarEnvName}-ticket-sqs
+            - Name: Bus__Queues__Webhook
+              Value: !Sub ${pVarEnvName}-webhook-sqs
+            - Name: Bus__Queues__Invoicing
+              Value: !Sub ${pVarEnvName}-invoicing-sqs
+            - Name: Bus__Queues__Email
+              Value: !Sub ${pVarEnvName}-email-sqs
+          Secrets:
+            - Name: Bus__AccessKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/AccessKey
+            - Name: Bus__SecretKey
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/SecretKey
+            - Name: NEW_RELIC_LICENSE_KEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/NEW_RELIC_LICENSE_KEY
+            - Name: servicestack__license
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/servicestack/license
+            - Name: DatabaseSettings__Server
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Server
+            - Name: DatabaseSettings__User
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/User
+            - Name: DatabaseSettings__Password
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/Password
+            - Name: Redis__ReadWriteHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadWriteHosts
+            - Name: Redis__ReadOnlyHosts
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Redis/ReadOnlyHosts
+            - Name: ElasticSearch__Uri
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/ElasticSearch/Uri
+            - Name: DynamoDb__Tables__Conversation
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Conversation
+            - Name: DynamoDb__Tables__Message
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/Message
+            - Name: DynamoDb__Tables__ScheduledJob
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DynamoDb/Tables/ScheduledJob
+            - Name: UploadSettings__BucketName
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/UploadSettings/BucketName
+
+#Below creates Task Definition for Quartz:
+  QuartzLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${pEnvName}-Quartz-Container-logs
+      RetentionInDays: !If [cIsProd, 90, 14]
+  QuartzTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ExecutionRoleArn: !Ref pExecutionRole
+      Family: !Sub ${pEnvName}-Backend-Family
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref pTaskRole
+      Cpu: !Ref pTaskCPU
+      Memory: !Ref pTaskMemory
+      ContainerDefinitions:
+        - Name: !Sub ${pEnvName}-Backend-Quartz-Task
+          Image: !Ref pDockerImageQuartz
+          MemoryReservation: 512
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref QuartzLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Sub "${pEnvName}-quartz"
+          PortMappings:
+            - ContainerPort: 80
+              #HostPort: 5002
+          Ulimits:
+            - Name: nofile
+              HardLimit: 524288
+              SoftLimit: 524288
+          Environment:
+            - Name:  MT_TRANSPORT
+              Value: SQS
+            - Name: MT_SQS__REGION
+              Value: eu-west-1
+            - Name: MT_Scheduler
+              Value: !Sub ${pVarEnvName}-quartz-sqs
+            - Name: MT_Quartz__InstanceName
+              Value: MassTransit-Quartz
+            - Name: MT_Quartz__Queue
+              Value: !Sub ${pVarEnvName}-quartz-sqs
+            - Name: MT_Quartz__Provider
+              Value: MySql
+            - Name: MT_Quartz__DriverDelegateType
+              Value: Quartz.Impl.AdoJobStore.MySQLDelegate, Quartz
+          Secrets:
+            - Name: MT_SQS__ACCESSKEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/AccessKey
+            - Name: MT_SQS__SECRETKEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/Bus/SecretKey
+            - Name: MT_Quartz__ConnectionString
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pVarEnvName}/backend/V2/DatabaseSettings/QuartzConnectionString
+            
+#Below create ECS Services to run the Tasks defined earlier in the defined Clusters
+  ApiService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListenerHTTPS
+    Properties: 
+      Cluster: !Ref ECSCluster
+      DeploymentConfiguration:
+        MinimumHealthyPercent: !Ref pMinHealthyContainersPercent
+      DesiredCount: !Ref pTasksDesiredCount
+      HealthCheckGracePeriodSeconds: !Ref pHealthCheckGracePeriod
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Sub ${pEnvName}-Backend-Api-Task
+          ContainerPort: !Ref pContainersPort
+          TargetGroupArn: !Ref ALBTargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: 
+            - !Ref pContainersSecurityGroup
+          Subnets: !Ref pTaskSubnetIds
+      ServiceName: !Sub ${pEnvName}-Backend-Api-Service
+      TaskDefinition: !Ref ApiTask
+
+  NotificationService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListenerHTTPSNotification
+    Properties: 
+      Cluster: !Ref ECSCluster
+      DeploymentConfiguration:
+        MinimumHealthyPercent: !Ref pMinHealthyContainersPercent
+      DesiredCount: !Ref pTasksDesiredCount
+      HealthCheckGracePeriodSeconds: !Ref pHealthCheckGracePeriod
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Sub ${pEnvName}-Backend-Notification-Task
+          ContainerPort: !Ref pContainersPortNotification
+          TargetGroupArn: !Ref ALBTargetGroupNotification
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: 
+            - !Ref pContainersSecurityGroup
+          Subnets: !Ref pTaskSubnetIds
+      ServiceName: !Sub ${pEnvName}-Backend-Notification-Service
+      TaskDefinition: !Ref NotificationTask
+
+  FraudService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListenerHTTPSFraud
+    Properties: 
+      Cluster: !Ref ECSCluster
+      DeploymentConfiguration:
+        MinimumHealthyPercent: !Ref pMinHealthyContainersPercent
+      DesiredCount: !Ref pTasksDesiredCountFraud
+      HealthCheckGracePeriodSeconds: !Ref pHealthCheckGracePeriod
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Sub ${pEnvName}-Backend-Fraud-Task
+          ContainerPort: !Ref pContainersPortFraud
+          TargetGroupArn: !Ref ALBTargetGroupFraud
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: 
+            - !Ref pContainersSecurityGroup
+          Subnets: !Ref pTaskSubnetIds
+      ServiceName: !Sub ${pEnvName}-Backend-Fraud-Service
+      TaskDefinition: !Ref FraudTask
+
+  ChatService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListenerHTTPSChat
+    Properties: 
+      Cluster: !Ref ECSCluster
+      DeploymentConfiguration:
+        MinimumHealthyPercent: !Ref pMinHealthyContainersPercent
+      DesiredCount: !Ref pTasksDesiredCountChat
+      HealthCheckGracePeriodSeconds: !Ref pHealthCheckGracePeriod
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Sub ${pEnvName}-Backend-Chat-Task
+          ContainerPort: !Ref pContainersPortChat
+          TargetGroupArn: !Ref ALBTargetGroupChat
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: 
+            - !Ref pContainersSecurityGroup
+          Subnets: !Ref pTaskSubnetIds
+      ServiceName: !Sub ${pEnvName}-Backend-Chat-Service
+      TaskDefinition: !Ref ChatTask
+
+  WebHookService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListenerHTTPSWebHook
+    Properties: 
+      Cluster: !Ref ECSCluster
+      DeploymentConfiguration:
+        MinimumHealthyPercent: !Ref pMinHealthyContainersPercent
+      DesiredCount: !Ref pTasksDesiredCountWebHook
+      HealthCheckGracePeriodSeconds: !Ref pHealthCheckGracePeriod
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Sub ${pEnvName}-Backend-WebHook-Task
+          ContainerPort: !Ref pContainersPortWebHook
+          TargetGroupArn: !Ref ALBTargetGroupWebHook
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: 
+            - !Ref pContainersSecurityGroup
+          Subnets: !Ref pTaskSubnetIds
+      ServiceName: !Sub ${pEnvName}-Backend-WebHook-Service
+      TaskDefinition: !Ref WebHookTask
+
+  InvoicingService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListenerHTTPSInvoicing
+    Properties: 
+      Cluster: !Ref ECSCluster
+      DeploymentConfiguration:
+        MinimumHealthyPercent: !Ref pMinHealthyContainersPercent
+      DesiredCount: !Ref pTasksDesiredCountInvoicing
+      HealthCheckGracePeriodSeconds: !Ref pHealthCheckGracePeriod
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Sub ${pEnvName}-Backend-Invoicing-Task
+          ContainerPort: !Ref pContainersPortInvoicing
+          TargetGroupArn: !Ref ALBTargetGroupInvoicing
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: 
+            - !Ref pContainersSecurityGroup
+          Subnets: !Ref pTaskSubnetIds
+      ServiceName: !Sub ${pEnvName}-Backend-Invoicing-Service
+      TaskDefinition: !Ref InvoicingTask
+
+  IdentityVerificationService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListenerHTTPSIdentityVerification
+    Properties: 
+      Cluster: !Ref ECSCluster
+      DeploymentConfiguration:
+        MinimumHealthyPercent: !Ref pMinHealthyContainersPercent
+      DesiredCount: !Ref pTasksDesiredCountIdentityVerification
+      HealthCheckGracePeriodSeconds: !Ref pHealthCheckGracePeriod
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Sub ${pEnvName}-Backend-IdentityVer-Task
+          ContainerPort: !Ref pContainersPortIdentityVerification
+          TargetGroupArn: !Ref ALBTargetGroupIdentityVerification
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: 
+            - !Ref pContainersSecurityGroup
+          Subnets: !Ref pTaskSubnetIds
+      ServiceName: !Sub ${pEnvName}-Backend-IdentityVer-Service
+      TaskDefinition: !Ref IdentityVerificationTask
+
+  QuartzService:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster: !Ref ECSCluster
+      DeploymentConfiguration:
+        MinimumHealthyPercent: !Ref pMinHealthyContainersPercent
+      DesiredCount: !Ref pTasksDesiredCountQuartz
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: 
+            - !Ref pContainersSecurityGroup
+          Subnets: !Ref pTaskSubnetIds
+      ServiceName: !Sub ${pEnvName}-Backend-Quartz-Service
+      TaskDefinition: !Ref QuartzTask
+
+#Below create Auto Scaling resources for the ECS Service above
+  ApiServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: cIsNotDev
+    DependsOn: ApiService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Sub service/${ECSCluster}/${ApiService.Name}
+      ScalableDimension: ecs:service:DesiredCount
+      MaxCapacity: !Ref pTaskMaxCount
+      MinCapacity: !Ref pTasksDesiredCount
+      RoleARN: !Ref pServiceScalingRole
+  ApiServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: cIsNotDev
+    Properties:
+      PolicyName: !Sub ${pEnvName}-Scaling-Policy-Api
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ApiServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization #others are ALBRequestCountPerTarget & ECSServiceAverageMemoryUtilization 
+          #ResourceLabel: app/<load-balancer-name>/<load-balancer-id>/targetgroup/<target-group-name>/<target-group-id> #only if ALBRequestCountPerTarget
+        ScaleInCooldown: !Ref pScalingCoolDown
+        ScaleOutCooldown: !Ref pScalingCoolDown
+        TargetValue: !Ref pScalingThreshold 
+  NotificationServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: cIsNotDev
+    DependsOn: NotificationService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Sub service/${ECSCluster}/${NotificationService.Name}
+      ScalableDimension: ecs:service:DesiredCount
+      MaxCapacity: !Ref pTaskMaxCount
+      MinCapacity: !Ref pTasksDesiredCount
+      RoleARN: !Ref pServiceScalingRole
+  NotificationServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: cIsNotDev
+    Properties:
+      PolicyName: !Sub ${pEnvName}-Scaling-Policy-Notification
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref NotificationServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization #others are ALBRequestCountPerTarget & ECSServiceAverageMemoryUtilization 
+          #ResourceLabel: app/<load-balancer-name>/<load-balancer-id>/targetgroup/<target-group-name>/<target-group-id> #only if ALBRequestCountPerTarget
+        ScaleInCooldown: !Ref pScalingCoolDown
+        ScaleOutCooldown: !Ref pScalingCoolDown
+        TargetValue: !Ref pScalingThreshold 
+
+  FraudServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: cIsNotDev
+    DependsOn: FraudService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Sub service/${ECSCluster}/${FraudService.Name}
+      ScalableDimension: ecs:service:DesiredCount
+      MaxCapacity: !Ref pTaskMaxCount
+      MinCapacity: !Ref pTasksDesiredCountFraud
+      RoleARN: !Ref pServiceScalingRole
+  FraudServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: cIsNotDev
+    Properties:
+      PolicyName: !Sub ${pEnvName}-Scaling-Policy-Fraud
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref FraudServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: !Ref pScalingCoolDown
+        ScaleOutCooldown: !Ref pScalingCoolDown
+        TargetValue: !Ref pScalingThreshold 
+
+  ChatServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: cIsNotDev
+    DependsOn: ChatService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Sub service/${ECSCluster}/${ChatService.Name}
+      ScalableDimension: ecs:service:DesiredCount
+      MaxCapacity: !Ref pTaskMaxCount
+      MinCapacity: !Ref pTasksDesiredCountChat
+      RoleARN: !Ref pServiceScalingRole
+  ChatServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: cIsNotDev
+    Properties:
+      PolicyName: !Sub ${pEnvName}-Scaling-Policy-Chat
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ChatServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: !Ref pScalingCoolDown
+        ScaleOutCooldown: !Ref pScalingCoolDown
+        TargetValue: !Ref pScalingThreshold 
+
+  WebHookServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: cIsNotDev
+    DependsOn: WebHookService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Sub service/${ECSCluster}/${WebHookService.Name}
+      ScalableDimension: ecs:service:DesiredCount
+      MaxCapacity: !Ref pTaskMaxCount
+      MinCapacity: !Ref pTasksDesiredCountWebHook
+      RoleARN: !Ref pServiceScalingRole
+  WebHookServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: cIsNotDev
+    Properties:
+      PolicyName: !Sub ${pEnvName}-Scaling-Policy-WebHook
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref WebHookServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: !Ref pScalingCoolDown
+        ScaleOutCooldown: !Ref pScalingCoolDown
+        TargetValue: !Ref pScalingThreshold 
+  
+  InvoicingServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: cIsNotDev
+    DependsOn: InvoicingService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Sub service/${ECSCluster}/${InvoicingService.Name}
+      ScalableDimension: ecs:service:DesiredCount
+      MaxCapacity: !Ref pTaskMaxCount
+      MinCapacity: !Ref pTasksDesiredCountInvoicing
+      RoleARN: !Ref pServiceScalingRole
+  InvoicingServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: cIsNotDev
+    Properties:
+      PolicyName: !Sub ${pEnvName}-Scaling-Policy-Invoicing
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref InvoicingServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: !Ref pScalingCoolDown
+        ScaleOutCooldown: !Ref pScalingCoolDown
+        TargetValue: !Ref pScalingThreshold 
+  
+  IdentityVerificationServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: cIsNotDev
+    DependsOn: IdentityVerificationService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Sub service/${ECSCluster}/${IdentityVerificationService.Name}
+      ScalableDimension: ecs:service:DesiredCount
+      MaxCapacity: !Ref pTaskMaxCount
+      MinCapacity: !Ref pTasksDesiredCountIdentityVerification
+      RoleARN: !Ref pServiceScalingRole
+  IdentityVerificationServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: cIsNotDev
+    Properties:
+      PolicyName: !Sub ${pEnvName}-Scaling-Policy-IdentityVer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref IdentityVerificationServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: !Ref pScalingCoolDown
+        ScaleOutCooldown: !Ref pScalingCoolDown
+        TargetValue: !Ref pScalingThreshold 
+  
+  QuartzServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: cIsNotDev
+    DependsOn: QuartzService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Sub service/${ECSCluster}/${QuartzService.Name}
+      ScalableDimension: ecs:service:DesiredCount
+      MaxCapacity: !Ref pTaskMaxCount
+      MinCapacity: !Ref pTasksDesiredCountQuartz
+      RoleARN: !Ref pServiceScalingRole
+  QuartzServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: cIsNotDev
+    Properties:
+      PolicyName: !Sub ${pEnvName}-Scaling-Policy-Quartz
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref QuartzServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: !Ref pScalingCoolDown
+        ScaleOutCooldown: !Ref pScalingCoolDown
+        TargetValue: !Ref pScalingThreshold 
+
+Outputs:
+  DNSRecord:
+    Value: !Ref ALBDNS
+  DNSRecordInternal:
+    Value: !Ref ALBDNSInternal
+  DNSRecordInternalFraud:
+    Value: !Ref ALBDNSInternalFraud
+  DNSRecordInternalChat:
+    Value: !Ref ALBDNSInternalChat
+  DNSRecordInternalWebHook:
+    Value: !Ref ALBDNSInternalWebHook
+  DNSRecordInternalInvoicing:
+    Value: !Ref ALBDNSInternalInvoicing
+  DNSRecordInternalIdentityVerification:
+    Value: !Ref ALBDNSInternalIdentityVerification

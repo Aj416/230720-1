@@ -1,0 +1,305 @@
+@brandId = 22222222-2222-2222-2222-222222222222
+
+##################################################
+### Get Client Token
+##################################################
+# @name clientAuth
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{client_email}}",
+    "password":"{{client_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+@clientToken = {{clientAuth.response.body.id_token}}
+
+##################################################
+### Get Advocate Token
+##################################################
+# @name advocateToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{advocate_email}}",
+    "password":"{{advocate_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@advToken = {{advocateToken.response.body.id_token}}
+
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Create new brand
+##################################################
+# @name createBrand
+POST {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "Name": "YourBrandNewBrand",
+    "Thumbnail": "https://assets.solvnow.com/hp/thumbnail.gif",
+    "Logo": "https://assets.solvnow.com/hp/thumbnail.gif",
+    "Contract": "https://assets.solvnow.com/companyone/contract.txt",
+    "FeePercentage": 0.3,
+    "TicketPrice": 0.77,
+    "VatRate": 0.0000,
+    "PaymentRouteId": 2,
+    "InductionDoneMessage": "## CONGRATULATIONS!\n\nYou have successfully completed your HP brand induction. You can refer to the guides below at anytime.",
+    "InductionInstructions": "HP has put together this 101 guide to get you authorised to Solv for them.",
+    "AutomaticAuthorization": true,
+    "UnauthorizedMessage": null,
+    "AgreementContent": null,
+    "AgreementHeading": null,
+    "IsAgreementRequired": true,
+    "InvoicingEnabled": true,
+    "InvoicingDashboardEnabled": true,
+    "WaitMinutesToClose": 10080,
+    "TicketsExportEnabled": true,
+    "Color": "#cccccc",
+    "SuperSolversEnabled": true,
+    "PushBackToClientEnabled": false
+}
+
+##################################################
+### Get brand induction items
+##################################################
+# @name getBrandInduction
+GET {{api_url}}/brands/{{brandId}}/induction/sections
+Content-Type: application/json
+Authorization: Bearer {{clientToken}}
+
+##################################################
+### Set brand induction items
+##################################################
+# @name setBrandInduction
+POST {{api_url}}/brands/{{brandId}}/induction/sections
+Content-Type: application/json
+Authorization: Bearer {{clientToken}}
+
+{
+  "sections": [
+    {
+      "id": "11111111-0000-0000-0000-000000000000",
+      "name": "Google links",
+      "order": 1,
+      "items": [
+
+        {
+          "id": "11111111-0000-0000-0000-000000000001",
+          "name": "com",
+          "order": 1,
+          "source": "https://google.com"
+        },
+        {
+          "id": "11111111-0000-0000-0000-000000000002",
+          "name": "pl",
+          "order": 2,
+          "source": "https://google.pl"
+        }
+      ]
+    },
+    {
+        "id": "22222222-0000-0000-0000-000000000000",
+        "name": "Solv",
+        "order": 2,
+        "items": [
+          {
+            "id": "22222222-0000-0000-0000-000000000001",
+            "name": "Privacy",
+            "order": 1,
+            "source": "https://solvnow.com/privacy"
+          }     
+        ]
+    }
+  ]
+}
+
+##################################################
+### Get available brands
+##################################################
+GET {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Get ticket pricing
+##################################################
+GET {{api_url}}/brands/{{brandId}}/pricing
+Content-Type: application/json
+Authorization: Bearer {{clientToken}}
+
+##################################################
+### Set ticket pricing
+##################################################
+POST {{api_url}}/brands/{{brandId}}/pricing
+Content-Type: application/json
+Authorization: Bearer {{clientToken}}
+
+6.0
+
+##################################################
+### Get client invoices
+##################################################
+GET {{api_url}}/brands/{{brandId}}/invoices?pageSize=2&pageIndex=0&sortOrder=asc&sortBy=ticketscount
+Authorization: Bearer {{clientToken}}
+
+##################################################
+### Get client invoice - particular one
+##################################################
+GET {{api_url}}/brands/{{brandId}}/invoices/a4fd6ded-79ee-410d-b934-9dcfe029dcb3
+Authorization: Bearer {{clientToken}}
+
+##################################################
+### Get quiz
+##################################################
+GET {{api_url}}/brands/{{brandId}}/quiz
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get abandond reasons associated with brand
+##################################################
+GET {{api_url}}/brands/{{brandId}}/abandon-reasons
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get tags associated with brand
+##################################################
+GET {{api_url}}/brands/{{brandId}}/tags
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Adds whitelisted phrases for brand
+##################################################
+
+POST  {{api_url}}/brands/{{brandId}}/whitelist
+Content-Type: application/json
+Authorization: Bearer {{clientToken}}
+
+[
+    "a@m.com",
+    "(1)1234585"
+]
+
+##################################################
+### Delete whitelisted phrases from brand
+##################################################
+
+DELETE  {{api_url}}/brands/{{brandId}}/whitelist
+Content-Type: application/json
+Authorization: Bearer {{clientToken}}
+
+[
+    "Phrase 1",
+    "Phrase 2"
+]
+
+##################################################
+### Post billing-details
+##################################################
+POST {{api_url}}/brands/{{brandId}}/billing-details
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "Name":"Name",
+    "Email":"email@email.com",
+    "VatNumber":"GB 21571895",
+    "CompanyNumber": "NI037606",
+    "Address": "Concentrix Europe Limited"
+}
+
+##################################################
+### Add tags
+##################################################
+POST {{api_url}}/brands/create-tags
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	{ "BrandId": "brand-guid-here", "Name": "tag-name", "Action": "Escalate", "SubTags": 
+    [
+      {"BrandId": "brand-guid-here", "Name": "sub-tag-name", "Action": "Escalate", "Level": "Regular"},
+      {"BrandId": "brand-guid-here", "Name": "sub-tag-name", "Action": "Escalate", "Level": 2}
+    ] 
+  },
+	{ "BrandId": "brand-guid-here", "Name": "tag-name", "DiagnosisEnabled": 0 },
+	{ "BrandId": "brand-guid-here", "Name": "tag-name", "Action": "Escalate", "Level": 1 }
+]
+
+##############################
+##### Get brand public info
+################################
+GET {{api_url}}/brands/hp-ams-1/public
+Content-Type: application/json
+
+##################################################
+### Get quiz
+##################################################
+GET {{api_url}}/brands/{{brandId}}/quiz
+Authorization: Bearer {{clientToken}}
+
+##################################################
+### Upload asset
+##################################################
+POST {{api_url}}/brands/{{brandId}}/assets
+Authorization: Bearer {{clientToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="sample_photo.png"
+Content-Type: image/png
+
+< ./onfido/sample_photo.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+##################################################
+### Get categories associated with brand
+##################################################
+GET {{api_url}}/brands/{{brandId}}/categories
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Add categories
+##################################################
+POST {{api_url}}/brands/{{brandId}}/categories
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ 
+  "Categories": 
+  [
+    { "Name": "category-name1-here", "Enabled": "true", "Order": 1 },
+    { "Name": "category-name2-here", "Order": 2 }
+  ] 
+}

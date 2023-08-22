@@ -1,0 +1,22 @@
+using System;
+
+namespace Tigerspike.Solv.Messaging.IdentityVerification
+{
+	public interface IIdentityCreatedEvent
+	{
+		/// <summary>
+		/// The advocate id.
+		/// </summary>
+		public Guid AdvocateId { get; set; }
+
+		/// <summary>
+		/// The applicant id.
+		/// </summary>
+		public string ApplicantId { get; set; }
+
+		/// <summary>
+		/// The event timestamp.
+		/// </summary>
+		public DateTime Timestamp { get; set; }
+	}
+}

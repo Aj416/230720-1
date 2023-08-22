@@ -1,0 +1,87 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+    commands:
+      - echo "Installing jq.."
+      - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+      - apt-get update && apt-get install jq
+  pre_build:
+    commands:
+      - echo "Get UAT docker image tag.."
+      - UAT_DOCKER_IMAGE=$(jq -r '.Parameters.pDockerImage' parameters/uat-backend.json)
+      - UAT_DOCKER_IMAGE_NOTIFICATION=$(jq -r '.Parameters.pDockerImageNotification' parameters/uat-backend.json)
+      - UAT_DOCKER_IMAGE_FRAUD=$(jq -r '.Parameters.pDockerImageFraud' parameters/uat-backend.json)
+      - UAT_DOCKER_IMAGE_CHAT=$(jq -r '.Parameters.pDockerImageChat' parameters/uat-backend.json)
+      - UAT_DOCKER_IMAGE_WEBHOOK=$(jq -r '.Parameters.pDockerImageWebHook' parameters/uat-backend.json)
+      - UAT_DOCKER_IMAGE_INVOICING=$(jq -r '.Parameters.pDockerImageInvoicing' parameters/uat-backend.json)
+      - UAT_DOCKER_IMAGE_IDENTITYVERIFICATION=$(jq -r '.Parameters.pDockerImageIdentityVerification' parameters/uat-backend.json)
+      - echo "Image is ${UAT_DOCKER_IMAGE}.."
+      - VERSION=$(echo $UAT_DOCKER_IMAGE | cut -d':' -f 2)
+      - echo "Version is ${VERSION}.."
+      - VERSIONNOTIFICATION=$(echo $UAT_DOCKER_IMAGE_NOTIFICATION | cut -d':' -f 2)
+      - echo "Version is ${VERSIONNOTIFICATION}.."
+      - VERSIONFRAUD=$(echo $UAT_DOCKER_IMAGE_FRAUD | cut -d':' -f 2)
+      - echo "Version is ${VERSIONFRAUD}.."
+      - VERSIONCHAT=$(echo $UAT_DOCKER_IMAGE_CHAT | cut -d':' -f 2)
+      - echo "Version is ${VERSIONCHAT}.."
+      - VERSIONWEBHOOK=$(echo $UAT_DOCKER_IMAGE_WEBHOOK | cut -d':' -f 2)
+      - echo "Version is ${VERSIONWEBHOOK}.."
+      - VERSIONINVOICING=$(echo $UAT_DOCKER_IMAGE_INVOICING | cut -d':' -f 2)
+      - echo "Version is ${VERSIONINVOICING}.."
+      - VERSIONIDENTITYVERIFICATION=$(echo $UAT_DOCKER_IMAGE_IDENTITYVERIFICATION | cut -d':' -f 2)
+      - echo "Version is ${VERSIONIDENTITYVERIFICATION}.."
+      - echo "Finding image in UAT repo.."
+      - $(aws ecr get-login --no-include-email)
+      - docker image ls ${UAT_DOCKER_IMAGE}
+      - docker pull ${UAT_DOCKER_IMAGE}
+      - docker image ls ${UAT_DOCKER_IMAGE_NOTIFICATION}
+      - docker pull ${UAT_DOCKER_IMAGE_NOTIFICATION}
+      - docker image ls ${UAT_DOCKER_IMAGE_FRAUD}
+      - docker pull ${UAT_DOCKER_IMAGE_FRAUD}
+      - docker image ls ${UAT_DOCKER_IMAGE_CHAT}
+      - docker pull ${UAT_DOCKER_IMAGE_CHAT}
+      - docker image ls ${UAT_DOCKER_IMAGE_WEBHOOK}
+      - docker pull ${UAT_DOCKER_IMAGE_WEBHOOK}
+      - docker image ls ${UAT_DOCKER_IMAGE_INVOICING}
+      - docker pull ${UAT_DOCKER_IMAGE_INVOICING}
+      - docker image ls ${UAT_DOCKER_IMAGE_IDENTITYVERIFICATION}
+      - docker pull ${UAT_DOCKER_IMAGE_IDENTITYVERIFICATION}
+  build:
+    commands:
+      - echo "Re-tagging UAT Docker image for Prod.."
+      - docker tag ${UAT_DOCKER_IMAGE} ${ECR_REPO_PROD_Api}:${VERSION}
+      - docker tag ${UAT_DOCKER_IMAGE_NOTIFICATION} ${ECR_REPO_PROD_Notification}:${VERSIONNOTIFICATION}
+      - docker tag ${UAT_DOCKER_IMAGE_FRAUD} ${ECR_REPO_PROD_Fraud}:${VERSIONFRAUD}
+      - docker tag ${UAT_DOCKER_IMAGE_CHAT} ${ECR_REPO_PROD_Chat}:${VERSIONCHAT}
+      - docker tag ${UAT_DOCKER_IMAGE_WEBHOOK} ${ECR_REPO_PROD_WebHook}:${VERSIONWEBHOOK}
+      - docker tag ${UAT_DOCKER_IMAGE_INVOICING} ${ECR_REPO_PROD_Invoicing}:${VERSIONINVOICING}
+      - docker tag ${UAT_DOCKER_IMAGE_IDENTITYVERIFICATION} ${ECR_REPO_PROD_IdentityVerification}:${VERSIONIDENTITYVERIFICATION}
+      - echo "Pushing Docker image to Prod ECR.."
+      - docker push ${ECR_REPO_PROD_Api}:${VERSION}
+      - docker push ${ECR_REPO_PROD_Notification}:${VERSIONNOTIFICATION}
+      - docker push ${ECR_REPO_PROD_Fraud}:${VERSIONFRAUD}
+      - docker push ${ECR_REPO_PROD_Chat}:${VERSIONCHAT}
+      - docker push ${ECR_REPO_PROD_WebHook}:${VERSIONWEBHOOK}
+      - docker push ${ECR_REPO_PROD_Invoicing}:${VERSIONINVOICING}
+      - docker push ${ECR_REPO_PROD_IdentityVerification}:${VERSIONIDENTITYVERIFICATION}
+      - echo "Updating CloudFormation parameters.."
+      - cd parameters
+      - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG "${ECR_REPO_PROD_Api}:${VERSION}" '.Parameters.pDockerImage=$jqIMAGE_TAG' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+      - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_NOTIFICATION "${ECR_REPO_PROD_Notification}:${VERSIONNOTIFICATION}" '.Parameters.pDockerImageNotification=$jqIMAGE_TAG_NOTIFICATION' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+      - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_FRAUD "${ECR_REPO_PROD_Fraud}:${VERSIONFRAUD}" '.Parameters.pDockerImageFraud=$jqIMAGE_TAG_FRAUD' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+      - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_CHAT "${ECR_REPO_PROD_Chat}:${VERSIONCHAT}" '.Parameters.pDockerImageChat=$jqIMAGE_TAG_CHAT' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+      - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_WEBHOOK "${ECR_REPO_PROD_WebHook}:${VERSIONWEBHOOK}" '.Parameters.pDockerImageWebHook=$jqIMAGE_TAG_WEBHOOK' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+      - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_INVOICING "${ECR_REPO_PROD_Invoicing}:${VERSIONINVOICING}" '.Parameters.pDockerImageInvoicing=$jqIMAGE_TAG_INVOICING' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+      - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_IDENTITYVERIFICATION "${ECR_REPO_PROD_IdentityVerification}:${VERSIONIDENTITYVERIFICATION}" '.Parameters.pDockerImageIdentityVerification=$jqIMAGE_TAG_IDENTITYVERIFICATION' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+      - cd ../
+artifacts:
+  files:
+    - packaged-backend.yml
+    - parameters/*.json
+    - buildspec-notify-newrelic.yml
+    - buildspec-api-automation.yml
+    - buildspec-mysql-migration.yml
+    - migrate.sql

@@ -1,0 +1,48 @@
+{
+	"Emails": {
+		"TicketCreated": {
+			"Subject": "{{BrandName}} support request received: {{Question}}",
+			"Body": "Thank you for giving us an opportunity to assist you! One of our support specialists will be in touch with you soon"
+		},
+		"AdvocateRepliedInEmail": {
+			"Subject": "{{BrandName}} Solver has replied to your question: {{Question}} #{{Number}}",
+			"Header": "{{AdvocateFirstName}} has replied to your question",
+			"ThankYou": "Thank you for contacting {{BrandName}} Support! To continue the conversation with {{AdvocateFirstName}}, about your question, please reply to this email.",
+			"EndChatText": "If you think your question has been answered you can close your ticket now.",
+			"EndChatCTA": "Close ticket"
+		},
+		"TicketSolved_Email": {
+			"Subject": "{{AdvocateFirstName}} is requesting to close the question: {{Question}} #{{Number}}",
+			"Header": "{{AdvocateFirstName}} has marked your question as solved.",
+			"CloseText": "If you need further support with this question please reply to this email. If we don’t hear from you within {{TicketClosingTime}} your question will be closed.",
+			"CloseCTA": "Yes my question has been solved"
+		},
+		"TicketClosed_Customer_Email": {
+			"Subject": "Question closed: {{Question}}",
+			"Header": "Your chat with {{AdvocateFirstName}} has ended.",
+			"Body": "We hope we have resolved your issue. To view the full transcript of your chat, please open the attached file."
+		},
+		"TicketClosed_System_Email": {
+			"Subject": "How would you rate the {{BrandName}} support you received from {{AdvocateFirstName}}: {{Question}}",
+			"Header": "How would you rate the {{BrandName}} support you received from {{AdvocateFirstName}}?",
+			"Body": "Please click below to rate your experience with {{AdvocateFirstName}} <br> Thanks for using {{BrandName}} support.",
+			"RateCTA": "Rate your support experience",
+			"Summary": "To view the full transcript of your conversation please open the attached file. Please, don’t reply to this email."
+		},
+		"MfaReset": {
+			"Subject": "Your MFA code has been reset",
+			"Header": "Your MFA code has been reset",
+			"Body": "We use multi factor authentication for additional security on Solv. You've requested for it to be reset and can now set it up again.",
+			"SetupCTA": "Setup MFA now"
+		},
+		"Partials": {
+			"Footer": "You have received this email based on the support request initiated by you, from this email."
+		},
+		"TicketEscalated": {
+			"Subject": "{{BrandName}} support request has been escalated: {{Question}}",
+			"Header": "Your question has been escalated, someone else will be in touch soon.",
+			"Body": "Please don’t reply to this email."
+		},
+		"Sender": "{{BrandName}} Support"
+	}
+}

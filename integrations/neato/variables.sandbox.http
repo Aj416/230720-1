@@ -1,0 +1,22 @@
+##################################################
+### Zendesk related variables
+##################################################
+@zendesk_apiToken = y6PuOe8njNeFKolDUe1ICx8mLKUQWczjPULAmjbm
+@zendesk_login = lukasz.krzykowski@tigerspike.com
+@zendesk_tokenFormat = {{zendesk_login}}/token:{{zendesk_apiToken}}
+@zendesk_subdomain = neatorobotics1522186678
+@zendesk_apiUrl = https://{{zendesk_subdomain}}.zendesk.com/api/v2
+@zendesk_group_id = 360007365793
+## this one have to be manually put as base64 using command like: echo -n {{zendesk_tokenFormat}} | base64
+@zendesk_token = bHVrYXN6Lmtyenlrb3dza2lAdGlnZXJzcGlrZS5jb20vdG9rZW46eTZQdU9lOG5qTmVGS29sRFVlMUlDeDhtTEtVUVdjempQVUxBbWpibQ==
+
+##################################################
+### Solv related variables
+##################################################
+@solv_apiUrl = https://sandbox-api.solvnow.com/v1
+
+##################################################
+### Client related variables
+##################################################
+@client_apiKey = VrVMqEfMk4idnwVANFmz7LFBTaBsM93TRmhr
+@client_brandId = 411a3bd0-f62e-11e9-a55c-069a7a2863ba

@@ -1,0 +1,34 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-include path="./partials/header.mjml" />
+    <mj-section padding-bottom="24px">
+      <mj-column>
+        <mj-text font-size="24px">{{Resources.Emails.AdvocateRepliedInEmail.Header}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-wrapper mj-class="mjwrapper">
+      <mj-section padding-bottom="24px">
+      </mj-section>
+      <mj-section mj-class="mjquestion">
+        <mj-column>
+          <mj-text mj-class="mjquestion-text">{{Message}}</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-text mj-class="mjwarning">{{Resources.Emails.AdvocateRepliedInEmail.ThankYou}}</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-raw>{% if {{EndChatEnabled}} == true %} </mj-raw>
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-text mj-class="mjwarning">{{Resources.Emails.AdvocateRepliedInEmail.EndChatText}}</mj-text>
+          <mj-button href="{{RateUrl}}" mj-class="mj-button">{{Resources.Emails.AdvocateRepliedInEmail.EndChatCTA}}</mj-button>
+        </mj-column>
+      </mj-section>
+      <mj-raw> {% endif %} </mj-raw>
+    </mj-wrapper>
+    <mj-include path="./partials/footer.mjml" />
+  </mj-body>
+</mjml>

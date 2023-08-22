@@ -1,0 +1,40 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Get available brands
+##################################################
+# @name brands
+GET {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+###
+@brandId = {{brands.response.body.$[?(@.name=='Solv Support')].id}}
+
+##################################################
+### Add new Whitelist
+##################################################
+POST {{api_url}}/brands/{{brandId}}/Whitelist
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"info@solvnow.com"
+]

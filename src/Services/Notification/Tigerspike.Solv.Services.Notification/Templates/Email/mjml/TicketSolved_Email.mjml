@@ -1,0 +1,21 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-include path="./partials/header.mjml" />
+    <mj-section padding-bottom="24px">
+      <mj-column>
+        <mj-text font-size="15px">{{Resources.Emails.TicketSolved_Email.Header}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-wrapper mj-class="mjwrapper">
+      <mj-section>
+        <mj-column>
+          <mj-button href="{{RateUrl}}" mj-class="mj-button">{{Resources.Emails.TicketSolved_Email.CloseCTA}}</mj-button>
+          <mj-text mj-class="mjwarning">{{Resources.Emails.TicketSolved_Email.CloseText}}</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-include path="./partials/question.mjml" />
+    </mj-wrapper>
+    <mj-include path="./partials/footer.mjml" />
+  </mj-body>
+</mjml>

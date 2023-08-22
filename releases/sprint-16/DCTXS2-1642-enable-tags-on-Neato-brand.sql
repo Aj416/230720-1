@@ -1,0 +1,1 @@
+UPDATE `brand` SET `TagsEnabled` = 1 WHERE `Name` = 'Neato'

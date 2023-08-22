@@ -1,0 +1,879 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Create new brand
+##################################################
+# @name createBrand
+POST {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Name": "HP",
+	"Thumbnail": "https://assets.solvnow.com/hp/thumbnail.gif",
+	"Logo": "https://assets.solvnow.com/hp/thumbnail.gif",
+	"Contract": "N/A",
+	"FeePercentage": 0.3,
+	"TicketPrice": 0.77,
+	"VatRate": 0.0000,
+	"PaymentRouteId": 2,
+	"InductionDoneMessage": "## CONGRATULATIONS!\n\nYou have successfully completed your HP brand induction. You can refer to the guides below at anytime.",
+	"InductionInstructions": "HP has put together this 101 guide to get you authorised to Solv for them.",
+	"AutomaticAuthorization": true,
+	"UnauthorizedMessage": null,
+	"AgreementContent": null,
+	"AgreementHeading": null,
+	"IsAgreementRequired": true,
+	"InvoicingEnabled": true,
+	"InvoicingDashboardEnabled": true,
+	"WaitMinutesToClose": 10080
+}
+
+@brandId = {{createBrand.response.body.id}}
+
+##################################################
+### Create induction section for brand
+##################################################
+POST {{api_url}}/brands/{{brandId}}/induction/sections
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Name": "Product knowledge",
+	"Items": [
+		{
+			"Name": "Solv flow",
+			"Source": "https://assets.solvnow.com/hp/solv-flow.html"
+		}
+	]
+}
+
+##################################################
+### Create new client accounts
+##################################################
+# @name createClients
+POST {{api_url}}/brands/{{brandId}}/clients
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	{
+		"Email": "solv+hpapac@mailinator.com",
+		"FirstName": "Client",
+		"LastName": "HP",
+		"Password": "@123QWEasdzxc"
+	}
+]
+
+##################################################
+### Create new super solver accounts
+##################################################
+# @name createSuperSolvers
+POST {{api_url}}/advocates/super-solvers
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+  {
+    "FirstName": "FULCHAND",
+    "LastName": "EKKA",
+    "Email": "fulchand.ekka@concentrix.com",
+	"Password": ""
+  },
+  {
+    "FirstName": "Sweta",
+    "LastName": "Goyal",
+    "Email": "sweta.goyal@concentrix.com",
+	"Password": ""
+  },
+  {
+    "FirstName": "Jaspreet",
+    "LastName": "Saini",
+    "Email": "jaspreet.saini@concentrix.com",
+	"Password": ""
+  },
+  {
+    "FirstName": "Sandeep",
+    "LastName": "Singh",
+    "Email": "sandeep.singh19@concentrix.com",
+	"Password": ""
+  },
+  {
+    "FirstName": "Atul",
+    "LastName": "Kumar",
+    "Email": "atul.kumar6@concentrix.com",
+	"Password": ""
+  },
+  {
+    "FirstName": "Imran",
+    "LastName": "I",
+    "Email": "imran.i1@concentrix.com",
+	"Password": ""
+  },
+  {
+    "FirstName": "Anoop",
+    "LastName": "Singh",
+    "Email": "anoop.singh2@concentrix.com",
+	"Password": ""
+  },
+  {
+    "FirstName": "Chandra",
+    "LastName": "Shekhar",
+    "Email": "chandra.shekhar@concentrix.com",
+	"Password": ""
+  },
+  {
+    "FirstName": "Abid",
+    "LastName": "Khan",
+    "Email": "abid.khan3@concentrix.com",
+	"Password": ""
+  }
+]
+
+##################################################
+### Bulk instert new advocate applications (internal agents)
+##################################################
+# @name createInternalAgents
+POST {{api_url}}/advocateApplications/bulk
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  applications: [
+    {
+      "Email": "user021@mailinator.com",
+      "FirstName": "User01",
+      "LastName": "Doe"
+    },
+    {
+      "Email": "user022@mailinator.com",
+      "FirstName": "User02",
+      "LastName": "Doe"
+    }
+  ],
+  brands: ["{{brandId}}"],
+  source: "CNX",
+  internalAgent: true
+}
+
+##################################################
+### TEST ENVIRONMENTS ONLY: Create defined (simplified) key for brand
+##################################################
+PUT {{api_url}}/brands/{{brandId}}/api-key
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"m2m": "hp-1",
+	"sdk": "hp-1"
+}
+
+##################################################
+### Create quiz
+##################################################
+POST {{api_url}}/brands/{{brandId}}/quiz
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Title": "Final Evaluation Assessment",
+	"Description": "You have successfully viewed the HP 101 guidelines. To represent HP, you'll now need to take a peer knowledge check. There are 30 questions but don’t worry, you still pass if you get four questions wrong.",
+	"AllowedMistakes": 4,
+	"Questions": [
+		{
+			"Title": "How would you help the customer identify the installed graphic card? (Select two)",
+			"IsMultiChoice": true,
+			"Options": [
+				{
+					"Text": "Device Manager",
+					"Correct": true
+				},
+				{
+					"Text": "Task Manager",
+					"Correct": true
+				},
+				{
+					"Text": "System Properties",
+					"Correct": false
+				},
+				{
+					"Text": "System32 folder",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "Which of the following commands can be used to launch System Restore?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "SFC /SCANNOW",
+					"Correct": false
+				},
+				{
+					"Text": "RSTRUI.EXE",
+					"Correct": true
+				},
+				{
+					"Text": "MSCONFIG",
+					"Correct": false
+				},
+				{
+					"Text": "Services. MSC",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "Which of the following connections can support 4G on a notebook?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "LAN",
+					"Correct": false
+				},
+				{
+					"Text": "WWAN",
+					"Correct": true
+				},
+				{
+					"Text": "WLAN",
+					"Correct": false
+				},
+				{
+					"Text": "PAN",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "What does the globe symbol signify on network connection?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Network disconnected",
+					"Correct": true
+				},
+				{
+					"Text": "IP Address Conflict",
+					"Correct": false
+				},
+				{
+					"Text": "APIPA",
+					"Correct": false
+				},
+				{
+					"Text": "Active internet",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer is not able to open www.hp.com using Internet Explorer. There is a yellow exclamation mark on network connection. What should we check first?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Restart the router",
+					"Correct": false
+				},
+				{
+					"Text": "Check IP Address",
+					"Correct": true
+				},
+				{
+					"Text": "Check LAN/WIFI driver",
+					"Correct": false
+				},
+				{
+					"Text": "System Restore",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": " Can we disable Windows Defender whilst installing a 3rd party anti-virus?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Yes",
+					"Correct": true
+				},
+				{
+					"Text": "No",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "Which of the following hardware device can cause an invalid electronic serial number error?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Hard Drive",
+					"Correct": false
+				},
+				{
+					"Text": "Processor",
+					"Correct": false
+				},
+				{
+					"Text": "Motherboard",
+					"Correct": true
+				},
+				{
+					"Text": "Chipset",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer is reporting a 3F0 error, what should we try first?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "UEFI Test on HDD",
+					"Correct": false
+				},
+				{
+					"Text": "System Recovery",
+					"Correct": false
+				},
+				{
+					"Text": "Replace system board",
+					"Correct": false
+				},
+				{
+					"Text": "Check BOOT Order",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "The customer is getting a 90b error, which of the following is a valid troubleshooting step?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Update BIOS",
+					"Correct": true
+				},
+				{
+					"Text": "Update Chipset",
+					"Correct": false
+				},
+				{
+					"Text": "Update Windows",
+					"Correct": false
+				},
+				{
+					"Text": "None of the above",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer is complaining that they are not getting Windows 10 updates on their computer. Which of the following is a valid troubleshooting step?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Date and time should be accurate",
+					"Correct": false
+				},
+				{
+					"Text": "Delete Software Distribution Folder",
+					"Correct": false
+				},
+				{
+					"Text": "Run Windows Update Troubleshooter",
+					"Correct": false
+				},
+				{
+					"Text": "All of the above",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "The customer is complaining that they are not getting audio when connecting the speaker to the front audio port. The customer has also confirmed that the audio is working fine from the rear audio port of their desktop PC. How will we fix this issue?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Update audio driver",
+					"Correct": false
+				},
+				{
+					"Text": "Replace front audio assembly",
+					"Correct": true
+				},
+				{
+					"Text": "Reset audio properties",
+					"Correct": false
+				},
+				{
+					"Text": "Make speaker default audio device",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer has purchased a Free DOS computer. They want to install a genuine HP OEM operating system. How can we help this customer?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Guide customer to download OEM image from cloud recovery",
+					"Correct": false
+				},
+				{
+					"Text": "Recovery Media will be shipped on a chargeable basis",
+					"Correct": false
+				},
+				{
+					"Text": "OEM operating systems cannot be installed in Free DOS PC",
+					"Correct": true
+				},
+				{
+					"Text": "Refer for Service Center",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer is experiencing slow internet and frequent disconnection. Loopback test shows 50% loss. What should we do next?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Update LAN driver",
+					"Correct": false
+				},
+				{
+					"Text": "Reset TCP/IP",
+					"Correct": true
+				},
+				{
+					"Text": "UEFI Test",
+					"Correct": false
+				},
+				{
+					"Text": "BIOS Update",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer is saying their computer crashes randomly and then restarts without any error message. Which of the following is a valid troubleshooting step?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Disable automatic restart",
+					"Correct": false
+				},
+				{
+					"Text": "Remove recent hardware & changes",
+					"Correct": false
+				},
+				{
+					"Text": "Update BIOS & Chipset",
+					"Correct": false
+				},
+				{
+					"Text": "All the above",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "The customer is getting the following error Not enough video memory whilst playing a game. The computer has only UMA graphics. Which of the following is a valid troubleshooting step?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Assign more memory to onboard graphic in BIOS",
+					"Correct": true
+				},
+				{
+					"Text": "Update graphic card driver",
+					"Correct": false
+				},
+				{
+					"Text": "Connect external monitor with better resolution and play the game",
+					"Correct": false
+				},
+				{
+					"Text": "Launch Windows Troubleshooter",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer confirmed that the mouse pointer is not responding to touchpad in Windows as well as in BIOS, the external USB mouse works fine. What should we try next?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Update Touchpad Driver",
+					"Correct": false
+				},
+				{
+					"Text": "Update BIOS",
+					"Correct": false
+				},
+				{
+					"Text": "Reinstall OS",
+					"Correct": false
+				},
+				{
+					"Text": "Replace Touchpad",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "Safe mode can be accessed from Advanced Startup in recovery options.",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "True",
+					"Correct": true
+				},
+				{
+					"Text": "False",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer is getting the following Disk boot failure error. HDD is getting detected in BIOS. HDD is the 1st boot device. HDD passed the UEFI test. The customer is seeking help in data backup before installing operating system. What should we suggest to the customer?  (Select 2)",
+			"IsMultiChoice": true,
+			"Options": [
+				{
+					"Text": "Check if unit is booting in Safe Mode",
+					"Correct": false
+				},
+				{
+					"Text": "HP does not support data backup",
+					"Correct": true
+				},
+				{
+					"Text": "Update BIOS",
+					"Correct": false
+				},
+				{
+					"Text": "Recommend that the customer contact local IT for data recovery",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "The customer is using a local account. They are getting the following error “incorrect password” and are unable to login to windows. The issue is same with onscreen keyboard. How will we fix this issue?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Change Language settings in BIOS",
+					"Correct": false
+				},
+				{
+					"Text": "Keyboard may be faulty, Run UEFI test on Keyboard",
+					"Correct": false
+				},
+				{
+					"Text": "Boot in Safe Mode and change the password",
+					"Correct": false
+				},
+				{
+					"Text": "Answer Security questions & try to reset the password",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "How can we find applications that are consuming maximum internet bandwidth?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Check in Task Manager",
+					"Correct": true
+				},
+				{
+					"Text": "Suggest that customer should contact ISP",
+					"Correct": false
+				},
+				{
+					"Text": "Use Speed Test Application",
+					"Correct": false
+				},
+				{
+					"Text": "Set metered network in Windows settings",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "Can customer install HP Support assistant on a Free DOS PC?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Yes",
+					"Correct": true
+				},
+				{
+					"Text": "No",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer wants to use their USB Type C Pen drive (3.1 Gen 2) on their Zbook 15 G5 laptop. The unit has got two USB 3 Type A port and two Thunderbolt 3 ports. How can the customer use their pen drive?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Use USB 3 to USB 3.1 Adapter",
+					"Correct": false
+				},
+				{
+					"Text": "Use Thunderbolt 3 to USB 3.1 Adapter",
+					"Correct": false
+				},
+				{
+					"Text": "USB 3.1 drive can be connected directly to USB 3 port",
+					"Correct": false
+				},
+				{
+					"Text": "USB 3.1 drive can be connected directly to Thunderbolt port",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "The customer has connected their Sony Bravia TV through the HDMI port. The display is coming on TV however they are complaining that the audio is from internal speakers of the laptop and not from the TV. How will we fix this issue?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Update Audio driver",
+					"Correct": false
+				},
+				{
+					"Text": "Update BIOS & Chipset",
+					"Correct": false
+				},
+				{
+					"Text": "Select HDMI Output as default Playback device",
+					"Correct": true
+				},
+				{
+					"Text": "Enable HDMI audio in BIOS",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer has installed a retail image of Windows 10 Pro in his HP Zbook 15 G5 and updated all the drivers using HPSA. However, there is an entry of unknown device in device manager with Hardware ID: USB\\VID_138A&PID_00AB&REV_0164. How would you help the customer install the driver?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Web Cam Driver",
+					"Correct": false
+				},
+				{
+					"Text": "Synaptic Fingerprint driver",
+					"Correct": true
+				},
+				{
+					"Text": "Synaptic Touchpad Driver",
+					"Correct": false
+				},
+				{
+					"Text": "Conexant Audio Driver",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The customer is getting 169.254.1.0 IP address. Which of the following is not a valid troubleshooting step to fix this issue?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Reset IP and Winsock",
+					"Correct": false
+				},
+				{
+					"Text": "Restart router and computer",
+					"Correct": false
+				},
+				{
+					"Text": "Restart DHCP service",
+					"Correct": false
+				},
+				{
+					"Text": "Check in Safe Mode with Networking",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "Improving roaming aggressiveness will improve the signal strength between PC and home router.",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "True",
+					"Correct": false
+				},
+				{
+					"Text": "False",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "The customer is complaining that they are not able to increase or decrease screen brightness using the function keys however they are able to perform the same using the Windows settings. How will we fix this issue?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Update Hotkey Drivers",
+					"Correct": true
+				},
+				{
+					"Text": "Update Display Driver",
+					"Correct": false
+				},
+				{
+					"Text": "Update BIOS",
+					"Correct": false
+				},
+				{
+					"Text": "Update Chipset",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "The type of partition required for creating a bootable UEFI USB drive is ______.",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "FAT16",
+					"Correct": false
+				},
+				{
+					"Text": "FAT32",
+					"Correct": true
+				},
+				{
+					"Text": "NTFS",
+					"Correct": false
+				},
+				{
+					"Text": "EFS",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "Touch screen can be calibrated using which option?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "Start --> Control Panel --> Tablet and Speech",
+					"Correct": false
+				},
+				{
+					"Text": "Start --> Control Panel --> Touch and Other Sensors",
+					"Correct": false
+				},
+				{
+					"Text": "Start --> Control Panel --> Touch Settings",
+					"Correct": false
+				},
+				{
+					"Text": "Start --> Control Panel --> Tablet PC settings",
+					"Correct": true
+				}
+			]
+		},
+		{
+			"Title": "The customer is complaining that their notebook display is showing lines. Which two steps?",
+			"IsMultiChoice": true,
+			"Options": [
+				{
+					"Text": "Disable ambient light sensor",
+					"Correct": false
+				},
+				{
+					"Text": "Check with an external Monitor",
+					"Correct": true
+				},
+				{
+					"Text": "Check the issue in BIOS",
+					"Correct": true
+				},
+				{
+					"Text": "Reinstall OS",
+					"Correct": false
+				}
+			]
+		},
+	]
+}
+
+##################################################
+### Create unique api keys for brand
+##################################################
+# @name generateApiKey
+POST {{api_url}}/brands/{{brandId}}/api-key
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+@sdkApiKey = {{generateApiKey.response.body.sdk}}
+
+##################################################
+### Add new whitelist
+##################################################
+POST {{api_url}}/brands/{{brandId}}/whitelist
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"18002587170",
+	"18001084746",
+	"18001084747",
+	"desktop@redeemnow.in",
+	"escalation@redeemnow.in",
+	"https://hp.care/virtualagent-pc",
+	"https://hp.care/virtualagent-printer",
+	"https://hp.care/diagnostic-tools",
+	"https://support.hp.com/in-en/",
+	"http://www.hp.com/go/privacy",
+	"http://www.register.hp.com",
+	"http://www.hp.com/go/hpcarepack/register",
+	"https://support.hp.com/in-en",
+	"https://store.hp.com/in-en/default/installation",
+	"https://store.hp.com/in-en/default/sales/guest/form/",
+	"https://support.hp.com/in-en/checkwarranty"
+]
+
+##################################################
+### Add abandon reasons
+##################################################
+POST {{api_url}}/brands/{{brandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"Don't like the price",
+	"Technical issue",
+	"Not relevant to me",
+	"Too difficult",
+	"Don't understand"
+]

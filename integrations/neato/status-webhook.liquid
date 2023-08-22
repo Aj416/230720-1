@@ -1,0 +1,21 @@
+{
+	"ticket": {
+		{% if data.toStatus == "Closed" %}
+			"comment": {
+				"body": {{ data.transcript | json }}
+			},
+		{% endif %}
+		{% if data.toStatus == "Escalated" %}
+			"comment": {
+				"body": {{ data.transcript | json }}
+			},
+			"additional_tags": [{{ data.escalationreason | json }}],
+		{% endif %}
+		{% if data.toStatus == "New" %}"status": "open"{% endif %}
+		{% if data.toStatus == "Reserved" %}"status": "open"{% endif %}
+		{% if data.toStatus == "Assigned" %}"status": "pending"{% endif %}
+		{% if data.toStatus == "Solved" %}"status": "solved"{% endif %}
+		{% if data.toStatus == "Closed" %}"status": "closed"{% endif %}
+		{% if data.toStatus == "Escalated" %}"status": "hold"{% endif %}
+	}
+}

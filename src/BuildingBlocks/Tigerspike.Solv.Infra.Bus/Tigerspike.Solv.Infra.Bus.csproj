@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Quartz.Serialization.Json" Version="3.0.7" />
+        <PackageReference Include="ServiceStack.Aws" Version="5.10.4" />
+        <PackageReference Include="System.ServiceModel.Primitives" Version="4.7.0" />
+        <PackageReference Include="CronExpressionDescriptor" Version="2.13.0" />
+        <PackageReference Include="FluentValidation" Version="9.5.4" />
+        <PackageReference Include="MassTransit" Version="7.1.5" />
+        <PackageReference Include="MassTransit.AmazonSQS" Version="7.1.5" />
+        <PackageReference Include="MassTransit.Extensions.DependencyInjection" Version="7.1.5" />
+        <PackageReference Include="MediatR" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.4" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
+        <PackageReference Include="MySql.Data" Version="8.0.17" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Tigerspike.Solv.Core\Tigerspike.Solv.Core.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,22 @@
+##################################################
+### Zendesk related variables
+##################################################
+@zendesk_apiToken = placeholder
+@zendesk_login = placeholder
+@zendesk_tokenFormat = {{zendesk_login}}/token:{{zendesk_apiToken}}
+@zendesk_subdomain = placeholder
+@zendesk_apiUrl = https://{{zendesk_subdomain}}.zendesk.com/api/v2
+@zendesk_group_id = 360007332893
+## this one have to be manually put as base64 using command like: echo -n {{zendesk_tokenFormat}} | base64
+@zendesk_token = placeholder
+
+##################################################
+### Solv related variables
+##################################################
+@solv_apiUrl = https://api.solvnow.com/v1
+
+##################################################
+### Client related variables
+##################################################
+@client_apiKey = Kuhsun9Y6bMgEfZH8KJQzFGWGAkima2sRzgJ
+@client_brandId = aaffc79a-fe3f-11e9-89c3-065a35fe7fb8

@@ -1,0 +1,198 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Create new brand
+##################################################
+# @name createBrand
+POST {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Name": "HP SmartFriend",
+	"Thumbnail": "https://assets.solvnow.com/hp-smartfriend/thumbnail.gif",
+	"Logo": "https://assets.solvnow.com/hp-smartfriend/thumbnail.gif",
+	"Contract": "N/A",
+	"FeePercentage": 0.3,
+	"TicketPrice": 0.0,
+	"VatRate": null,
+	"PaymentRouteId": null,
+	"InductionDoneMessage": "## CONGRATULATIONS!\n\nYou have successfully completed your HP SmartFriend brand induction. You can refer to the guides below at anytime.",
+	"InductionInstructions": "HP SmartFriend has put together this 101 guide to get you authorised to Solv for them.",
+	"AutomaticAuthorization": true,
+	"UnauthorizedMessage": null,
+	"AgreementContent": null,
+	"AgreementHeading": null,
+	"IsAgreementRequired": true,
+	"InvoicingEnabled": true,
+	"InvoicingDashboardEnabled": false,
+	"WaitMinutesToClose": 4320
+}
+
+@brandId = {{createBrand.response.body.id}}
+
+##################################################
+### Create induction section for brand
+##################################################
+POST {{api_url}}/brands/{{brandId}}/induction/sections
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Name": "Product knowledge",
+	"Items": [
+		{
+			"Name": "Solv flow",
+			"Source": "https://assets.solvnow.com/hp-smartfriend/solv-flow.html"
+		}
+	]
+}
+
+##################################################
+### Create new client accounts
+##################################################
+# @name createClients
+POST {{api_url}}/brands/{{brandId}}/clients
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	{
+		"Email": "solv+hp@mailinator.com",
+		"FirstName": "Client",
+		"LastName": "HP",
+		"Password": "Test@123"
+	}
+]
+
+##################################################
+### Bulk instert new advocate applications (internal agents)
+##################################################
+# @name createInternalAgents
+POST {{api_url}}/advocateApplications/bulk
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  applications: [
+    {
+      "Email": "user021@mailinator.com",
+      "FirstName": "User01",
+      "LastName": "Doe"
+    },
+    {
+      "Email": "user022@mailinator.com",
+      "FirstName": "User02",
+      "LastName": "Doe"
+    }
+  ],
+  brands: ["{{brandId}}"],
+  source: "CNX",
+  internalAgent: true
+}
+
+##################################################
+### TEST ENVIRONMENTS ONLY: Create defined (simplified) key for brand
+##################################################
+PUT {{api_url}}/brands/{{brandId}}/api-key
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"m2m": "hp-smartfriend-1",
+	"sdk": "hp-smartfriend-1"
+}
+
+##################################################
+### Create quiz
+##################################################
+POST {{api_url}}/brands/{{brandId}}/quiz
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Title": "quiz title",
+	"Description": "quiz description",
+	"AllowedMistakes": 1,
+	"Questions": [
+		{
+			"Title": "quiz question title",
+			"IsMultiChoice": true,
+			"Options": [
+				{
+					"Text": "quiz option 1",
+					"Correct": true
+				},
+				{
+					"Text": "quiz option 2",
+					"Correct": false
+				},
+				{
+					"Text": "quiz option 3",
+					"Correct": false
+				}
+			]
+		},
+		{
+			"Title": "quiz question title 1",
+			"IsMultiChoice": false,
+			"Options": []
+		}
+	]
+}
+
+##################################################
+### Create unique api keys for brand
+##################################################
+# @name generateApiKey
+POST {{api_url}}/brands/{{brandId}}/api-key
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+@sdkApiKey = {{generateApiKey.response.body.sdk}}
+
+##################################################
+### Add new whitelist
+##################################################
+POST {{api_url}}/brands/{{brandId}}/whitelist
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"18004746836",
+	"18448141801",
+	"18557852777",
+	"18662115207",
+	"18889994747"
+]
+
+##################################################
+### Add abandon reasons
+##################################################
+POST {{api_url}}/brands/{{brandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"Don't like the price",
+	"Technical issue",
+	"Not relevant to me",
+	"Too difficult",
+	"Don't understand"
+]

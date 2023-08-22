@@ -1,0 +1,42 @@
+{
+	"Emails": {
+		"TicketCreated": {
+			"Subject": "La sua richiesta di supporto è stata ricevuta: {{Question}}",
+			"Body": "La ringraziamo per averci dato la possibilità di assisterla. Uno dei nostri operatori la contatterà a breve."
+		},
+		"AdvocateRepliedInEmail": {
+			"Subject": "Il Solver ha risposto alla sua domanda: {{Question}} #{{Number}}",
+			"Header": "Il Solver ha risposto alla sua domanda",
+			"ThankYou": "La ringraziamo per aver contattato il nostro Supporto. Per continuare la conversazione con il Solver, riguardo la sua richiesta, gentilmente risponda a questa email. Ha ricevuto questa email in seguito alla sua richiesta di supporto.",
+			"EndChatText": "Se pensa di aver ricevuto risposta alla sua domanda può chiudere la richiesta di supporto ora.",
+			"EndChatCTA": "Chiudi la richiesta"
+		},
+		"TicketSolved_Email": {
+			"Subject": "Il Solver richiede di chiudere la richiesta di supporto: {{Question}} #{{Number}}",
+			"Header": "Il Solver ha indicato la sua richiesta come risolta",
+			"CloseText": "Se ha bisogno di ulteriore supporto gentilmente risponda a questa email. Qualora non dovesse rispondere entro {{TicketClosingTime}} la sua richiesta sarà considerata come risolta.",
+			"CloseCTA": "Si, ho ricevuto risposta alla mia domanda"
+		},
+		"TicketClosed_Customer_Email": {
+			"Subject": "La richiesta è stata chiusa: {{Question}}",
+			"Header": "La sua conversazione con il Solver si è conclusa.",
+			"Body": "Speriamo di aver risolto la sua problematica. Per poter vedere la trascrizione della conversazione, gentilemente apra il file allegato."
+		},
+		"TicketClosed_System_Email": {
+			"Subject": "Come valuterebbe il supporto ricevuto dal Solver?",
+			"Header": "Come valuterebbe il supporto ricevuto da Solv?",
+			"Body": "Gentilmente clicchi in basso per valutare la sua esperienza con il Solver",
+			"RateCTA": "Valuta la tua esperienza con il Supporto",
+			"Summary": "Per visualizzare la trascrizione della sua conversazione apra il file in allegato. La preghiamo di non rispondere a questa email."
+		},
+		"Partials": {
+			"Footer": "Ha ricevuto questa email in seguito alla sua richiesta di supporto."
+		},
+		"TicketEscalated": {
+			"Subject": "La richiesta di supporto a {{BrandName}} è stata transferita al corretto dipartimento: {{Question}}",
+			"Header": "La sua domanda è stata transferita al corretto dipartimento, sarà contattato a breve da un altro operatore.",
+			"Body": "La preghiamo di non rispondere a questa email."
+		},
+		"Sender": "Supporto {{BrandName}}"
+	}
+}

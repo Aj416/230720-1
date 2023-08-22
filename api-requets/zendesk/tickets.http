@@ -1,0 +1,91 @@
+##################################################
+@apiToken = y6PuOe8njNeFKolDUe1ICx8mLKUQWczjPULAmjbm
+@login = lukasz.krzykowski@tigerspike.com
+@tokenFormat = {{login}}/token:{{apiToken}}
+@subdomain = neatorobotics1522186678
+@zendeskApiUrl = https://{{subdomain}}.zendesk.com/api/v2
+@solvApiUrl = https://sandbox-api.solvnow.com/v1
+@apiKey = iba7dmmVgqxupIHnAW6AgJOACkkjEFF5
+@brandId = 411a3bd0-f62e-11e9-a55c-069a7a2863ba
+
+## this one have to be manually put as base64 using command like: echo {{tokenFormat}} | base64
+@token = bHVrYXN6Lmtyenlrb3dza2lAdGlnZXJzcGlrZS5jb20vdG9rZW46eTZQdU9lOG5qTmVGS29sRFVlMUlDeDhtTEtVUVdjempQVUxBbWpibQ==
+
+
+@ticket_id = 156
+
+##################################################
+### List tickets
+##################################################
+# @name listTickets
+GET {{zendeskApiUrl}}/tickets.json
+Content-Type: application/json
+Authorization: Basic {{token}}
+
+##################################################
+### Show ticket
+##################################################
+# @name showTicket
+GET {{zendeskApiUrl}}/tickets/{{ticket_id}}.json
+Content-Type: application/json
+Authorization: Basic {{token}}
+
+##################################################
+### Show ticket comments
+##################################################
+# @name comments
+GET {{zendeskApiUrl}}/tickets/{{ticket_id}}/comments.json
+Content-Type: application/json
+Authorization: Basic {{token}}
+
+##################################################
+### Show ticket audit
+##################################################
+# @name audit
+GET {{zendeskApiUrl}}/tickets/{{ticket_id}}/audits.json
+Content-Type: application/json
+Authorization: Basic {{token}}
+
+##################################################
+### Show ticket audit (particular)
+##################################################
+# @name auditParticular
+GET {{zendeskApiUrl}}/tickets/{{ticket_id}}/audits/967295741813.json
+Content-Type: application/json
+Authorization: Basic {{token}}
+
+##################################################
+### Update ticket - add tags on top of current ones
+##################################################
+# @name updateTicket
+PUT {{zendeskApiUrl}}/tickets/update_many.json?ids={{ticket_id}}
+Content-Type: application/json
+Authorization: Basic {{token}}
+
+{
+    "ticket": {
+        "status": "hold",
+        "comment": {
+            "body": "chat transcript"
+        },
+        "additional_tags": ["openTimeExceeded"]
+    }
+}
+
+##################################################
+### Update ticket - set tags exactly as stated
+##################################################
+# @name updateTicket
+PUT {{zendeskApiUrl}}/tickets/{{ticket_id}}
+Content-Type: application/json
+Authorization: Basic {{token}}
+
+{
+    "ticket": {
+        "status": "hold",
+        "comment": {
+            "body": "chat transcript"
+        },
+        "tags": ["openTimeExceeded"]
+    }
+}

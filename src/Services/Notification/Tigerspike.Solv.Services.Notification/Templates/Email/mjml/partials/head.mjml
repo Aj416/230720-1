@@ -1,0 +1,21 @@
+<mj-head>
+  <mj-title>{{Subject}}</mj-title>
+  <mj-font name="Roboto" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500"></mj-font>
+  <mj-attributes>
+    <mj-all font-family="Roboto" font-weight="300"></mj-all>
+    <mj-body background-color="#f9fafb" />
+    <mj-text align="center" color="#7A92A3" font-size="14px" line-height="24px" />
+    <mj-section padding="0px"></mj-section>
+    <mj-class name="mjwrapper" background-color="#fff" border-radius="6px" padding="30px 40px 40px 40px" max-width="600px" />
+    <mj-class name="mjheader" padding-top="30px" padding-bottom="30px" />
+    <mj-class name="mjlogo" width="100%" />
+    <mj-class name="mjquestion" padding-top="18px" padding-bottom="16px" background-color="#F5F9FF" />
+    <mj-class name="mjquestion-text" color="#2672CF" />
+    <mj-class name="mjfooter-text" font-size="12px" line-height="16px" font-weight="300" />
+    <mj-class name-"mjfooter-disclaimer" padding-top="10px" padding-bottom="0px" />
+    <mj-class name="mjsolv-logo" width="80px" height="26px" />
+    <mj-class name="mjwarning" font-size="13px" font-weight="300" />
+    <mj-class name="mjtitle" font-size="24px" font-weight="300" />
+    <mj-class name="mj-button" background-color="#2672CF" padding="15px 25px" />
+  </mj-attributes>
+</mj-head>

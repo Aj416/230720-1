@@ -1,0 +1,2 @@
+INSERT INTO `brandadvocateresponseconfig` (`Id`, `BrandId`, `IsActive`, `Type`, `Content`, `DelayInSeconds`, `ChatActionId`, `RelevantTo`, `AbandonedCount`, `EscalationReason`, `IsAutoAbandoned`, `Priority`)
+    SELECT UUID(), Id, 1, 6, NULL, 180, NULL, NULL, NULL, NULL, NULL, 0 FROM `Brand` WHERE `Name` = 'HP AMS Print';

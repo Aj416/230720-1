@@ -1,0 +1,202 @@
+##################################################
+### Get Advocate Token
+##################################################
+# @name advocateToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{advocate_email}}",
+    "password":"{{advocate_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@advToken = {{advocateToken.response.body.id_token}}
+
+
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+### Get random question
+# @name getRandomQuestion
+GET https://opentdb.com/api.php?amount=1
+
+@question =  {{getRandomQuestion.response.body.results[0].question}}
+
+##################################################
+### Create a ticket
+##################################################
+# @name createTicket
+POST {{api_url}}/tickets?apiKey=wellnest-1
+Content-Type: application/json
+
+{
+    "question": "{{question}}",
+    "email": 	"{{ticket_email}}",
+    "firstname":"{{ticket_firstname}}",
+    "lastName": "{{ticket_lastName}}",
+    "transportType": "chat",
+    "source": null,
+    "metadata": {
+        "urgencyLevel": "urgent",
+        "location": "us"
+    }
+}
+
+@ticketId = {{createTicket.response.body.id}}
+@customerToken = {{createTicket.response.body.token}}
+
+
+##################################################
+### Reserve a ticket
+##################################################
+# @name reserveTicket
+POST {{api_url}}/tickets/reserve
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+@ticketId = {{reserveTicket.response.body.ticketId}}
+
+##################################################
+### Get assigned tickets of advocate
+##################################################
+GET {{api_url}}/tickets/advocate
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get ticket for advocate
+##################################################
+GET {{api_url}}/tickets/{{ticketId}}
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Accept a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/accept
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Set tags on a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/tags
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+[
+    "tag-guid-goes-here",
+    "another-tag-guid-goes-here"
+]
+
+##################################################
+### Solve a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/transition
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+{
+    "correctlyDiagnosed": null
+}
+
+##################################################
+### Reject a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/reject
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+[2, 3]
+
+##################################################
+### Set a complexity of a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/complexity
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+{
+    "complexity": 9
+}
+
+##################################################
+### Resume chat on ticket
+##################################################
+# @name resumeTicket
+POST {{api_url}}/tickets/{{ticketId}}/resume
+Authorization: Bearer {{customerToken}}
+
+##################################################
+### Get rejection reasons
+##################################################
+GET {{api_url}}/tickets/reject-reasons
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Search ticekets using term
+##################################################
+GET {{api_url}}/tickets/search?term=how&pageIndex=0&pageSize=25&sortBy=createdDate&sortOrder=desc&statuses=Assigned, Solved, Reserved
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Search ticekets time framed
+##################################################
+GET {{api_url}}/tickets/search?pageIndex=0&pageSize=25&from=200720190000&to=310720191014&sortBy=createdDate&sortOrder=desc&statuses=Assigned,Solved,Closed
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Search Import using sorting
+##################################################
+GET {{api_url}}/tickets/import?brandId=22222222-2222-2222-2222-222222222222&pageIndex=0&pageSize=25&sortBy=uploadDate&sortOrder=asc
+Authorization: Bearer {{adminToken}}
+
+
+##################################################
+### Generate Export Failure ticket data for CSV
+##################################################
+GET {{api_url}}/tickets/import/{ticketImportId}/failures
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+@categoryId = category-guid-here
+##################################################
+### Set category on a ticket
+##################################################
+
+POST {{api_url}}/tickets/{{ticketId}}/category/{{categoryId}}
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Set valid transfer on a ticket
+##################################################
+
+POST {{api_url}}/tickets/{{ticketId}}/valid-transfer
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+{
+    "isValidTransfer": true
+}

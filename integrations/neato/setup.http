@@ -1,0 +1,157 @@
+##################################################
+### Replace variables with environment file (e.g. variables.sandbox.http) below
+##################################################
+
+##################################################
+### Zendesk related variables
+##################################################
+@zendesk_apiToken = placeholder
+@zendesk_login = placeholder
+@zendesk_tokenFormat = placeholder
+@zendesk_subdomain = placeholder
+@zendesk_apiUrl = placeholder
+@zendesk_group_id = placeholder
+## this one have to be manually put as base64 using command like: echo -n {{zendesk_tokenFormat}} | base64
+@zendesk_token = placeholder
+
+
+##################################################
+### Solv related variables
+##################################################
+@solv_apiUrl = placeholder
+
+##################################################
+### Client related variables
+##################################################
+@client_apiKey = placeholder
+@client_brandId = placeholder
+
+##################################################
+### SETUP CODE
+##################################################
+
+##################################################
+### Zendesk - Create target
+##################################################
+# @name createTarget
+POST {{zendesk_apiUrl}}/targets.json
+Content-Type: application/json
+Authorization: Basic {{zendesk_token}}
+
+{
+	"target": {
+		"type": "http_target",
+		"title": "[Solv] Create ticket endpoint",
+		"active": true,
+		"target_url": "{{solv_apiUrl}}/tickets?apiKey={{client_apiKey}}",
+		"method": "post",
+		"content_type": "application/json"
+	}
+}
+
+@targetId = {{createTarget.response.body.target.id}}
+
+
+##################################################
+### Zendesk - Create trigger
+##################################################
+# @name createTrigger
+POST {{zendesk_apiUrl}}/triggers.json
+Content-Type: application/json
+Authorization: Basic {{zendesk_token}}
+
+{
+	"trigger": {
+		"title": "[Solv] Create ticket",
+		"active": true,
+		"conditions": {
+			"all": [
+				{ 
+					"field": "status", 
+					"operator": "is", 
+					"value": "new" 
+				},
+				{ 
+					"field": "group_id", 
+					"operator": "is", 
+					"value": "{{zendesk_group_id}}" 
+				}
+			]
+		},
+		"actions": [
+			{ 
+				"field": "notification_target", 
+				"value": [
+					"{{targetId}}",
+					"{\n    \"question\": \"{{ticket.title}}: {{ticket.description}}\",\n    \"email\": \t\"{{ticket.requester.email}}\",\n    \"firstname\":\"{{ticket.requester.first_name}}\",\n    \"lastName\": \"{{ticket.requester.last_name}}\",\n    \"brandId\":  \"{{client_brandId}}\",\n    \"referenceId\": \"{{ticket.id}}\",\n\t\"source\": \"{{ticket.via}}\"\n}"
+				]
+			}
+		]
+	}
+}
+
+
+##################################################
+### Solv - Register ticket status webhook
+##################################################
+# @name createWebHook
+POST {{solv_apiUrl}}/webhooks
+Content-Type: application/json
+Authorization: ApiKey {{client_apiKey}}
+
+{
+    "eventType": "TicketStatusChangedEvent",
+    "url": 	"{{zendesk_apiUrl}}/tickets/update_many.json?ids={{data.referenceId}}",
+    "body": 
+    "
+		{
+			\"ticket\": {
+				{% if data.toStatus == \"Closed\" %}
+					\"comment\": {
+						\"body\": {{ data.transcript | json }}
+					},
+				{% endif %}
+				{% if data.toStatus == \"Escalated\" %}
+					\"comment\": {
+						\"body\": {{ data.transcript | json }}
+					},
+					\"additional_tags\": [{{ data.escalationreason | json }}],
+				{% endif %}
+				{% if data.toStatus == \"New\" %}\"status\": \"open\"{% endif %}
+				{% if data.toStatus == \"Reserved\" %}\"status\": \"open\"{% endif %}
+				{% if data.toStatus == \"Assigned\" %}\"status\": \"pending\"{% endif %}
+				{% if data.toStatus == \"Solved\" %}\"status\": \"solved\"{% endif %}
+				{% if data.toStatus == \"Closed\" %}\"status\": \"closed\"{% endif %}
+				{% if data.toStatus == \"Escalated\" %}\"status\": \"hold\"{% endif %}
+			}
+		}
+    ",
+    "verb": "put",
+    "contentType": "application/json",
+    "authorization": "Basic {{zendesk_token}}"
+}
+
+##################################################
+### Solv - Register ticket tags webhook
+##################################################
+# @name createTagsWebHook
+POST {{solv_apiUrl}}/webhooks
+Content-Type: application/json
+Authorization: ApiKey {{client_apiKey}}
+
+{
+    "eventType": "TicketTagsChangedEvent",
+    "url": 	"{{zendesk_apiUrl}}/tickets/update_many.json?ids={{data.referenceId}}",
+    "body": 
+    "
+		{
+			\"ticket\": {
+				\"additional_tags\": {{ data.addedTags | json }},
+				\"remove_tags\": {{ data.removedTags | json }}
+			}
+		}
+    ",
+    "verb": "put",
+    "contentType": "application/json",
+    "authorization": "Basic {{zendesk_token}}"
+}

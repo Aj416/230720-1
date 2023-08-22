@@ -1,0 +1,22 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-include path="./partials/header.mjml" />
+    <mj-wrapper mj-class="mjwrapper">
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-text font-size="15px">{{Resources.Emails.TicketClosed_System_Email.Header}}</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-include path="./partials/question.mjml" />
+      <mj-section padding-top="10px">
+        <mj-column>
+          <mj-text mj-class="mjwarning">{{Resources.Emails.TicketClosed_System_Email.Body}}</mj-text>
+          <mj-button href="{{ChatUrl}}" mj-class="mj-button">{{Resources.Emails.TicketClosed_System_Email.RateCTA}}</mj-button>
+          <mj-text mj-class="mjwarning">{{Resources.Emails.TicketClosed_System_Email.Summary}}</mj-text>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+    <mj-include path="./partials/footer.mjml" />
+  </mj-body>
+</mjml>

@@ -1,0 +1,22 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-section padding-bottom="24px">
+      <mj-column>
+            <mj-text font-size="24px">Hi {{SolverFirstName}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-wrapper mj-class="mjwrapper" >
+        <mj-section text-align="left">
+          <mj-column>
+            <mj-text font-size="16px">The brand(s) below have been removed from your profile but any other brands you may have remain active:</mj-text>
+          </mj-column>
+        </mj-section>
+        <mj-section text-align="left">
+          <mj-column>
+            <mj-text font-size="16px">{{BlockedBrands}}</mj-text>
+          </mj-column>
+        </mj-section>
+    </mj-wrapper>
+  </mj-body>
+</mjml>

@@ -1,0 +1,108 @@
+@onfidoToken = api_sandbox.qocGLeRkfpp.SVcIdxqE4LJqKXyTO6AR4DJv9kafuxGu
+@onfidoApiUrl = https://api.onfido.com
+
+@applicantId = {{createApplicant.response.body.id}}
+@checkId = {{createCheck.response.body.id}}
+@resultUrl = {{createCheck.response.body.results_uri}}
+
+##################################################
+### Create applicant
+##################################################
+# @name createApplicant
+POST {{onfidoApiUrl}}/v3/applicants/ 
+Authorization: Token token={{onfidoToken}}
+Content-Type: application/json
+
+{
+  "first_name": "Jane 3",
+  "last_name": "Unidentified",
+  "dob": "1990-01-01"
+}
+
+##################################################
+### Create JWT
+##################################################
+# @name createJWT
+POST {{onfidoApiUrl}}/v3/sdk_token
+Authorization: Token token={{onfidoToken}}
+Content-Type: application/json
+
+{
+  "applicant_id": "{{applicantId}}",
+  "referrer": "http://solvnow.local:3000/identity"
+}
+
+##################################################
+### Upload document
+##################################################
+# @name uploadDocument
+POST {{onfidoApiUrl}}/v3/documents
+Authorization: Token token={{onfidoToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="applicant_id"
+
+{{applicantId}}
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="type"
+
+driving_licence
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="sample.png"
+Content-Type: image/png
+
+< ./sample_driving_licence.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+@documentId = {{uploadDocument.response.body.id}}
+
+##################################################
+### List documents
+##################################################
+# @name listDocuments
+GET {{onfidoApiUrl}}/v3/documents?applicant_id={{applicantId}}
+Authorization: Token token={{onfidoToken}}
+
+##################################################
+### Upload photo
+##################################################
+# @name uploadPhoto
+POST {{onfidoApiUrl}}/v3/live_photos
+Authorization: Token token={{onfidoToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="applicant_id"
+
+{{applicantId}}
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="sample.png"
+Content-Type: image/png
+
+< ./sample_photo.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+@photoId = {{uploadDocument.response.body.id}}
+
+##################################################
+### Create check
+##################################################
+# @name createCheck
+POST {{onfidoApiUrl}}/v3/checks/ 
+Authorization: Token token={{onfidoToken}}
+Content-Type: application/json
+
+{
+  "applicant_id": "{{applicantId}}",
+  "report_names": ["document", "known_faces"],
+  "asynchronous": true
+}
+
+##################################################
+### Check result
+##################################################
+# @name checkResult
+GET {{onfidoApiUrl}}/v3/checks/{{checkId}}
+Authorization: Token token={{onfidoToken}}
+Content-Type: application/json

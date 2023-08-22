@@ -1,0 +1,33 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+
+##################################################
+### Start operation of gathering solver response times for the tickets
+##################################################
+POST {{api_url}}/maintenance/initialize-solver-response-time
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Marks all users in Auth0 as verified
+##################################################
+POST {{api_url}}/maintenance/mark-all-emails-as-verified
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+

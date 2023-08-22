@@ -1,0 +1,41 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Build advocate index
+##################################################
+POST {{api_url}}/index/advocates
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Build ticket index
+##################################################
+POST {{api_url}}/index/tickets
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Build advocate application index
+##################################################
+POST {{api_url}}/index/advocateapplications
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Build Fraud index
+##################################################
+POST {{api_url}}/fraud/index
+Authorization: Bearer {{adminToken}}

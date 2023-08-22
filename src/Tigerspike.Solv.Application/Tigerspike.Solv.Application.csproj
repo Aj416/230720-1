@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net5.0</TargetFramework>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AutoMapper" Version="8.1.0" />
+		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="5.0.1" />
+		<PackageReference Include="AWSSDK.Core" Version="3.5.2.7" />
+		<PackageReference Include="AWSSDK.Kinesis" Version="3.5.0.67" />
+		<PackageReference Include="CsvHelper" Version="13.0.0" />
+		<PackageReference Include="MediatR" Version="9.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.4" />
+		<PackageReference Include="Microsoft.FeatureManagement" Version="2.2.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+		<PackageReference Include="Nanoid" Version="2.1.0" />
+		<PackageReference Include="Refit" Version="6.0.38" />
+		<PackageReference Include="Humanizer" Version="2.8.26" />
+		<PackageReference Include="WorkflowCore" Version="3.5.2" />
+		<PackageReference Include="WorkflowCore.Providers.AWS" Version="3.5.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\BuildingBlocks\Tigerspike.Solv.Localization\Tigerspike.Solv.Localization.csproj" />
+		<ProjectReference Include="..\BuildingBlocks\Tigerspike.Solv.Messaging\Tigerspike.Solv.Messaging.csproj" />
+		<ProjectReference Include="..\BuildingBlocks\Tigerspike.Solv.Core\Tigerspike.Solv.Core.csproj" />
+		<ProjectReference Include="..\Tigerspike.Solv.Domain\Tigerspike.Solv.Domain.csproj" />
+		<ProjectReference Include="..\Tigerspike.Solv.Infra.Data\Tigerspike.Solv.Infra.Data.csproj" />
+		<ProjectReference Include="..\BuildingBlocks\Tigerspike.Solv.Infra.Bus\Tigerspike.Solv.Infra.Bus.csproj" />
+		<ProjectReference Include="..\Tigerspike.Solv.Infra.Storage\Tigerspike.Solv.Infra.Storage.csproj" />
+	</ItemGroup>
+
+</Project>

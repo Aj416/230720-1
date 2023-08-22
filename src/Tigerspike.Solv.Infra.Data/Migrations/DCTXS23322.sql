@@ -1,0 +1,1 @@
+UPDATE `brand` SET Code = 'SmartFriend' WHERE ShortCode = 'SF';

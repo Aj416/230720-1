@@ -1,0 +1,54 @@
+version: 0.2
+env:
+  variables:
+    REPO: "solvnow-api-automation"
+    S3_BUCKET: "solvnow-api-automation"
+    TOPIC: "SlackNotifier-SNS"
+phases:
+  install:
+    runtime-versions:
+      nodejs: 10
+    commands:
+      - echo "Updating and installing jq.."
+      - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+      - apt-get update && apt-get install jq
+  pre_build:
+    commands:
+      - ACCOUNT_ID=$(echo $CODEBUILD_BUILD_ARN | cut -d':' -f 5)
+      - TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+      - echo "Build started at " $TIMESTAMP
+      - echo "Retrieving and adding SSH key.."
+      - aws ssm get-parameter --name /codebuild/codebuild_rsa --with-decryption > response
+      - cat response | jq '.Parameter.Value' > codebuild_rsa.quotes
+      - cat codebuild_rsa.quotes | cut -d'"' -f2 > codebuild_rsa.oneline
+      - cat codebuild_rsa.oneline | tr "#" "\n" > ~/.ssh/id_rsa
+      - chmod 400 ~/.ssh/id_rsa
+      - echo "SSH key added.."
+      - echo "Cloning API Automation repo.."
+      - ssh -T git@bitbucket.org
+      - git clone --single-branch --branch master git@bitbucket.org:tigerspike/${REPO}.git
+      - cd ${REPO}
+      - echo "Retrieving secrets file.."
+      - aws ssm get-parameter --name /codebuild/api-automation/secret --with-decryption > response
+      - cat response | jq '.Parameter.Value' | jq '.|fromjson' > test/config/secret.json
+      - echo "Opening SIT ALB Security Group for this agent.."
+      - AGENT_IP=$(curl ifconfig.me)
+      - aws ec2 authorize-security-group-ingress --group-id ${SITALBSECURITYGROUP} --protocol tcp --port 443 --cidr ${AGENT_IP}/32
+  build:
+    commands:
+      - echo "Installing npm dependencies.."
+      - npm install
+      - echo "Running test scripts.."
+      - npm test
+  post_build:
+    commands:
+      - echo "Revoking SIT ALB Security Group rule for this agent.."
+      - aws ec2 revoke-security-group-ingress --group-id ${SITALBSECURITYGROUP} --protocol tcp --port 443 --cidr ${AGENT_IP}/32
+      - echo "Zipping reports.."
+      - cd reports
+      - zip -r ${TIMESTAMP}.zip .
+      - echo "Uploading zipped reports to S3.."
+      - aws s3 cp ${TIMESTAMP}.zip s3://${S3_BUCKET}/${TIMESTAMP}.zip --sse AES256
+      - echo "Notifying SNS of results.."
+      - aws sns publish --topic-arn "arn:aws:sns:${AWS_REGION}:${ACCOUNT_ID}:${TOPIC}" --message "<!here|here> You can *Download new SIT Automation Test report* _(you must be logged in to AWS Console)_ from here https://s3.console.aws.amazon.com/s3/object/${S3_BUCKET}/${TIMESTAMP}.zip?region=${AWS_REGION}&tab=overview"
+      - echo "Testing finished."

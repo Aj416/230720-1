@@ -1,0 +1,38 @@
+{
+  "name": "solv-backend",
+  "version": "1.2.63",
+  "description": "Solv backend package",
+  "private": true,
+  "scripts": {
+    "test": "dotnet run",
+    "commit": "git-cz",
+    "release": "standard-version",
+    "release-dry-run": "standard-version --dry-run"
+  },
+  "author": "",
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "commit-msg": "commitlint -e $GIT_PARAMS"
+    }
+  },
+  "lint-staged": {
+    "*.cs": []
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^8.0.0",
+    "@commitlint/config-conventional": "^8.0.0",
+    "@commitlint/prompt": "^8.0.0",
+    "commitizen": "^3.1.1",
+    "commitlint": "^8.0.0",
+    "husky": "^2.5.0",
+    "lint-staged": "^8.1.5",
+    "standard-version": "^7.0.1"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/@commitlint/prompt"
+    }
+  },
+  "dependencies": {}
+}

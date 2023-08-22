@@ -1,0 +1,1 @@
+docker-compose -f docker-compose-app.yml logs --tail 500 -f 

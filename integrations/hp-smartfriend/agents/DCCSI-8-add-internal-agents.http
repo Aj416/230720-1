@@ -1,0 +1,43 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Bulk instert new advocate applications
+##################################################
+# @name bulk-insert
+POST {{api_url}}/advocateApplications/bulk
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  applications: [
+    {
+      "Email": "user01@mailinator.com",
+      "FirstName": "User01",
+      "LastName": "Doe"
+    },
+    {
+      "Email": "user02@mailinator.com",
+      "FirstName": "User02",
+      "LastName": "Doe"
+    }
+  ],
+  brands: ["22222222-2222-2222-2222-222222222222"], //Please change brand Id before run this on SIT/UAT
+  source: "CNX",
+  internalAgent: true
+}

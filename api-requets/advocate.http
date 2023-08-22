@@ -1,0 +1,246 @@
+##################################################
+### Get Advocate Token
+##################################################
+# @name advocateToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{advocate_email}}",
+    "password":"{{advocate_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+
+@advToken = {{advocateToken.response.body.id_token}}
+
+@ticketId = 9713cbc8-a0bb-4304-9986-54df2106c4e7
+
+##################################################
+### Fetch User Info
+##################################################
+# @name userInfo
+GET {{api_url}}/userinfo
+Accept: application/json
+Authorization: Bearer {{advToken}}
+
+@userId = {{userInfo.response.body.id}}
+
+##################################################
+### Send a message for a ticket
+### Don't use the same client id twice, or the web app won't show it
+##################################################
+POST {{api_url}}/chat/{{ticketId}}/messages
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+{
+    "message":"Advocate test message",
+    "clientMessageId":"af560450-1cc0-11ea-9e97-53786e71ad47"
+}
+
+##################################################
+### Signup the advocate after getting invited by admin
+##################################################
+POST {{api_url}}/advocates
+Content-Type: application/json
+
+{
+	"token" : "YUD7KmCpcQgyabfpFe/nVrnT8kKvlUcItOCbTAdeAPI=",
+	"password": "@123QWEasdzxc"
+}
+
+##################################################
+### Get current tickets for advocate
+##################################################
+GET {{api_url}}/tickets/advocate
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get advocate brands
+##################################################
+GET {{api_url}}/users/{{userId}}/brands
+Accept: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get recents advocate invoices
+##################################################
+GET {{api_url}}/advocates/{{userId}}/invoices?pageIndex=0&pageSize=25&sortOrder=Desc&sortBy=total
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get advocate invoice - particular one
+##################################################
+GET {{api_url}}/advocates/{{userId}}/invoices/82bd8d94-6339-4f6b-8e7e-9f36a728a339
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get paypal redirect urls
+##################################################
+GET {{api_url}}/advocates/paypal-redirect-url
+Authorization: Bearer {{advToken}}
+Content-Type: application/json
+
+##################################################
+### Get paypal status
+##################################################
+POST {{api_url}}/advocates/update-paypal-status
+Authorization: Bearer {{advToken}}
+Content-Type: application/json
+
+
+##################################################
+### Get induction for a brand
+##################################################
+@brandId = 22222222-2222-2222-2222-222222222222
+
+GET {{api_url}}/advocates/{{userId}}/brands/{{brandId}}/induction
+Authorization: Bearer {{advToken}}
+Content-Type: application/json
+
+##################################################
+### Agree to the contract
+##################################################
+POST {{api_url}}/advocates/agree-to-contract/{{brandId}}
+Authorization: Bearer {{advToken}}
+Content-Type: application/json
+
+##################################################
+### View induction item
+##################################################
+POST {{api_url}}/advocates/{{userId}}/brands/{{brandId}}/induction/{{itemId}}
+Authorization: Bearer {{advToken}}
+Content-Type: application/json
+
+##################################################
+### set Guidelines agreed
+##################################################
+POST {{api_url}}/advocates/{{userId}}/brands/{{brandId}}/guideline
+Authorization: Bearer {{advToken}}
+Content-Type: application/json
+
+##################################################
+### Start practice mode
+##################################################
+POST {{api_url}}/advocates/start-practice
+Authorization: Bearer {{advToken}}
+Content-Type: application/json
+
+##################################################
+### Post quiz solution
+##################################################
+POST {{api_url}}/advocates/{{userId}}/brands/{{brandId}}/quiz
+Authorization: Bearer {{advToken}}
+Content-Type: application/json
+
+[
+    {
+        id: "37c989cc-f707-11e9-aeeb-0242ac120002",
+        answers: ["37d63bba-f707-11e9-aeeb-0242ac120002", "37d8d56e-f707-11e9-aeeb-0242ac120002"]
+    },
+    {
+        id: "37c9a1fc-f707-11e9-aeeb-0242ac120002",
+        answers: ["37d90397-f707-11e9-aeeb-0242ac120002"]
+    }
+]
+
+##################################################
+### Get Onfido Web SDK token
+##################################################
+# @name getIdentityToken
+GET {{api_url}}/advocates/{{userId}}/identity/token
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Start Onfido identity check
+##################################################
+# @name startIdentityCheck
+GET {{api_url}}/advocates/{{userId}}/identity/check
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Simulate webhook
+##################################################
+# @name identityWebhook
+POST {{api_url}}/advocates/identity/webhook
+Content-Type: application/json
+X-SHA2-Signature: 58ffc4306efd3cc7cb1cd148fa86d377cd6d357c2bcce507b7b07bffa74da358
+
+{"payload":{"resource_type":"check","action":"check.completed","object":{"id":"abda465c-8945-4563-8675-22897ea3786c","status":"complete","completed_at_iso8601":"2020-02-25T11:33:39Z","href":"https://api.onfido.com/v2/applicants/11472c08-5587-47e2-85af-d6165a981093/checks/abda465c-8945-4563-8675-22897ea3786c","completed_at":"2020-02-25 11:33:39 UTC"}}}
+
+##################################################
+### Get dashboard statistics
+##################################################
+GET {{api_url}}/advocates/{{userId}}/statistics/periods
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get ticket statistics overview for a given date range
+##################################################
+GET {{api_url}}/tickets/statistics/overview?from=020319871200&to=030319871200
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get ticket statistics overview without a given date range
+##################################################
+GET {{api_url}}/tickets/statistics/overview
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get available tickets count by brand Ids
+##################################################
+GET {{api_url}}/tickets/available?brandsId=22222222-2222-2222-2222-222222222222&brandsId=b4444444-4444-4444-4444-444444444444&brandsId=12345222-2222-2222-2222-222222222222&brandsId=1ba0e77a-726e-11ea-ae39-02bd1090d4dc
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+### Get ticket statistics performance overview for current week for all brands
+##################################################
+GET {{api_url}}/tickets/statistics/performance/week
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get ticket statistics performance overview for current week for one brand
+##################################################
+GET {{api_url}}/tickets/statistics/performance/week?brandId={{brandId}}
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get ticket statistics performance overview for all-time
+##################################################
+GET {{api_url}}/tickets/statistics/performance/all-time
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get advocate performane breakdown and summary
+##################################################
+@period = week
+
+GET {{api_url}}/advocates/{{userId}}/statistic/periods/{{period}}breakdown?from=090820201200&brandIds=22222222-2222-2222-2222-222222222222&brandIds=08d8443b-04cd-4213-8c18-b971b8e3b554
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Change name of advocate
+##################################################
+POST {{api_url}}/users/change-name
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+{
+  "FirstName": "SolvUpdated",
+  "LastName": "UserUpdated",
+}

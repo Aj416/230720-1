@@ -1,0 +1,127 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Get Client Token
+##################################################
+# @name clientToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{client_email}}",
+    "password":"{{client_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+@cliToken = {{clientToken.response.body.id_token}}
+
+##################################################
+### Get Advocate Token
+##################################################
+# @name advocateToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{advocate_email}}",
+    "password":"{{advocate_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+
+@advToken = {{advocateToken.response.body.id_token}}
+
+##################################################
+### Fetch User Info
+##################################################
+# @name userInfo
+GET {{api_url}}/userinfo
+Accept: application/json
+Authorization: Bearer {{advToken}}
+
+@userId = {{userInfo.response.body.id}}
+
+@invoiceId = 08d9518a-263e-4780-85f2-8bf600e9941f
+@advocateId = 22222222-3333-4444-5555-666666666666
+@brandId = 08d8cce7-1c41-4556-82a3-81aa568b0d68
+##################################################
+### Returns invoice data
+##################################################
+GET {{api_url}}/advocates/{{userId}}/invoices/{{invoiceId}}
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Returns list of payments of the advocate
+##################################################
+GET {{api_url}}/advocates/{{userId}}/invoices
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Returns invoice data
+##################################################
+GET {{api_url}}/brands/{{brandId}}/invoices/{{invoiceId}}
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Returns list of brand invoices (paged)
+##################################################
+GET {{api_url}}/brands/{{brandId}}/invoices
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Returns advocate invoices
+##################################################
+GET {{api_url}}/invoices/advocates
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Pay advocate invoice 
+##################################################
+@advocateInvoiceId = 08d79814-6041-6d6e-6562-51b9c077a7e6
+
+POST {{api_url}}/admin/pay/advocate/{{advocateInvoiceId}}
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Pay client invoice 
+##################################################
+@clientInvoiceId = 08d79814-6014-6d8c-0708-60b7b2c637a9
+
+POST {{api_url}}/admin/pay/platform/{{clientInvoiceId}}
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Turn on/off the recurring invoicing cycle job
+##################################################
+GET {{api_url}}/admin/recurring-invoicing-cycle/true
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Start invoice generation for last week
+##################################################
+GET {{api_url}}/admin/start-invoicing-cycle?startDate=2021-10-06T01:30
+Authorization: Bearer {{adminToken}}

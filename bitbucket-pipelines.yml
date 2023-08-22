@@ -1,0 +1,451 @@
+image:
+  name: 922963202565.dkr.ecr.eu-west-1.amazonaws.com/solv-build-backend:latest
+  aws:
+    access-key: $AWS_ACCESS_KEY_ID
+    secret-key: $AWS_SECRET_ACCESS_KEY
+
+options:
+  max-time: 30
+definitions:
+  services:
+    docker:
+      memory: 2048
+pipelines:
+  branches:
+    '{feature/*,bugfix/*,hotfix/*}':
+      - step:
+          name: Build then Test dotnet
+          caches:
+            - dotnetcore
+          script:
+            - echo "Start Building dotnet packages.."
+            - export PATH="$PATH:/root/.dotnet/tools"
+            - cd src
+            - dotnet --version
+            - dotnet restore -nowarn:msb3202,nu1503
+            - dotnet build --no-restore -c Release
+            - echo "Testing dotnet.."
+            - cd ../tests
+            - dotnet vstest **.Tests/bin/Release/**/**.Tests.dll
+            - echo "Publishing dotnet packages.."
+            - cd ../src/Tigerspike.Solv.Api
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../src/Services/Notification/Tigerspike.Solv.Services.Notification
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../Fraud/Tigerspike.Solv.Services.Fraud
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../WebHook/Tigerspike.Solv.Services.WebHook
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../Chat/Tigerspike.Solv.Services.Chat
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../Invoicing/Tigerspike.Solv.Services.Invoicing
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../IdentityVerification/Tigerspike.Solv.Services.IdentityVerification
+            - dotnet publish --no-restore -c Release -v q -o output
+            - echo "Generate migration script.."
+            - cd ../../../../
+            - dotnet tool install --global dotnet-ef
+            - dotnet ef migrations script -p src/Tigerspike.Solv.Infra.Data/Tigerspike.Solv.Infra.Data.csproj -o CloudFormation/migrate.sql --idempotent
+          artifacts: 
+            - src/Tigerspike.Solv.Api/output/**
+            - src/Services/Notification/Tigerspike.Solv.Services.Notification/output/**
+            - src/Services/Fraud/Tigerspike.Solv.Services.Fraud/output/**
+            - src/Services/WebHook/Tigerspike.Solv.Services.WebHook/output/**
+            - src/Services/Chat/Tigerspike.Solv.Services.Chat/output/**
+            - src/Services/Invoicing/Tigerspike.Solv.Services.Invoicing/output/**
+            - src/Services/IdentityVerification/Tigerspike.Solv.Services.IdentityVerification/output/**
+            - CloudFormation/migrate.sql
+    master:
+      - step:
+          name: Build and Test
+          caches:
+            - dotnetcore
+          script:
+            - echo "Installing Java JRE needed by Sonar.."
+            - apt-get update && apt-get install -y default-jre
+            - echo "Installing SonarScanner for MSBuild.."
+            #- dotnet tool install --global dotnet-sonarscanner
+            - export PATH="$PATH:/root/.dotnet/tools"
+            - echo "Starting SonarScanner and Building dotnet packages.."
+            - cd src
+            - dotnet restore -nowarn:msb3202,nu1503
+            - dotnet sonarscanner begin /k:"solvnow-backend" /d:sonar.host.url=https://sonarqube.dev.solvnow.com /d:sonar.login=${SONAR_TOKEN}
+            - dotnet build --no-restore -c Release
+            - dotnet sonarscanner end /d:sonar.login=${SONAR_TOKEN}
+            - echo "Testing dotnet.."
+            - cd ../tests
+            - dotnet vstest **.Tests/bin/Release/**/**.Tests.dll
+            - echo "Publishing dotnet packages.."
+            - cd ../src/Tigerspike.Solv.Api
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../src/Services/Notification/Tigerspike.Solv.Services.Notification
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../Fraud/Tigerspike.Solv.Services.Fraud
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../WebHook/Tigerspike.Solv.Services.WebHook
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../Chat/Tigerspike.Solv.Services.Chat
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../Invoicing/Tigerspike.Solv.Services.Invoicing
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../IdentityVerification/Tigerspike.Solv.Services.IdentityVerification
+            - dotnet publish --no-restore -c Release -v q -o output
+            - echo "Generate migration script.."
+            - cd ../../../../
+            - dotnet tool install --global dotnet-ef
+            - dotnet ef migrations script -p src/Tigerspike.Solv.Infra.Data/Tigerspike.Solv.Infra.Data.csproj -o CloudFormation/migrate.sql --idempotent
+          artifacts: 
+            - src/Tigerspike.Solv.Api/output/**
+            - src/Services/Notification/Tigerspike.Solv.Services.Notification/output/**
+            - src/Services/Fraud/Tigerspike.Solv.Services.Fraud/output/**
+            - src/Services/WebHook/Tigerspike.Solv.Services.WebHook/output/**
+            - src/Services/Chat/Tigerspike.Solv.Services.Chat/output/**
+            - src/Services/Invoicing/Tigerspike.Solv.Services.Invoicing/output/**
+            - src/Services/IdentityVerification/Tigerspike.Solv.Services.IdentityVerification/output/**
+            - CloudFormation/migrate.sql
+      - step:
+          name: Deploy to Dev
+          deployment: Dev
+          caches:
+            - dotnetcore
+          script:
+            - echo "Building Docker container.."
+            - docker info
+            - docker -D build -t solv-backend-dev . --file Dockerfile --build-arg ENV_NAME=dev
+            - docker images --filter reference=solv-backend-dev
+            - echo "Building Notification container.."
+            - docker -D build -t solv-backend-dev-notification . --file src/Services/Notification/Tigerspike.Solv.Services.Notification/Dockerfile --build-arg ENV_NAME=dev
+            - docker images --filter reference=solv-backend-dev-notification
+            - echo "Building Fraud container.."
+            - docker -D build -t solv-backend-dev-fraud . --file src/Services/Fraud/Tigerspike.Solv.Services.Fraud/Dockerfile --build-arg ENV_NAME=dev
+            - docker images --filter reference=solv-backend-dev-fraud
+            - echo "Building WebHook container.."
+            - docker -D build -t solv-backend-dev-webhook . --file src/Services/WebHook/Tigerspike.Solv.Services.WebHook/Dockerfile --build-arg ENV_NAME=dev
+            - docker images --filter reference=solv-backend-dev-webhook
+            - echo "Building Chat container.."
+            - docker -D build -t solv-backend-dev-chat . --file src/Services/Chat/Tigerspike.Solv.Services.Chat/Dockerfile --build-arg ENV_NAME=dev
+            - docker images --filter reference=solv-backend-dev-chat
+            - echo "Building Invoicing container.."
+            - docker -D build -t solv-backend-dev-invoicing . --file src/Services/Invoicing/Tigerspike.Solv.Services.Invoicing/Dockerfile --build-arg ENV_NAME=dev
+            - docker images --filter reference=solv-backend-dev-invoicing
+            - echo "Building IdentityVerification container.."
+            - docker -D build -t solv-backend-dev-identityverification . --file src/Services/IdentityVerification/Tigerspike.Solv.Services.IdentityVerification/Dockerfile --build-arg ENV_NAME=dev
+            - docker images --filter reference=solv-backend-dev-identityverification
+            - echo "Tagging Docker container.."
+            - COMMIT=$(echo $BITBUCKET_COMMIT | cut -c -7)
+            - echo "Commit for tagging is ${COMMIT}.."
+            - docker tag solv-backend-dev ${ECR_REPO_DEV}:${COMMIT}
+            - docker tag solv-backend-dev-notification ${ECR_REPO_DEV_NOTIFICATION}:${COMMIT}
+            - docker tag solv-backend-dev-fraud ${ECR_REPO_DEV_FRAUD}:${COMMIT}
+            - docker tag solv-backend-dev-webhook ${ECR_REPO_DEV_WEBHOOK}:${COMMIT}
+            - docker tag solv-backend-dev-chat ${ECR_REPO_DEV_CHAT}:${COMMIT}
+            - docker tag solv-backend-dev-invoicing ${ECR_REPO_DEV_INVOICING}:${COMMIT}
+            - docker tag solv-backend-dev-identityverification ${ECR_REPO_DEV_IDENTITYVERIFICATION}:${COMMIT}
+            - echo "Installing AWS CLI.."
+            - apt-get update
+            - apt-get install -y jq zip python-dev python-pip
+            - pip install awscli
+            - aws --version
+            - echo "Setting up AWS CLI.."
+            - echo $BitbucketUserSecret > BitbucketUserSecret.tmp
+            - base64 -d BitbucketUserSecret.tmp > BitbucketUserSecret.txt
+            - BitbucketUserSecret=$(cat BitbucketUserSecret.txt)
+            - aws configure set region $AWS_REGION
+            - aws configure set aws_access_key_id $BitbucketUserKey
+            - aws configure set aws_secret_access_key $BitbucketUserSecret
+            - echo "Deleting merged branch stack if exist or continuing.."
+            - BRANCH_CAP=$(git show | grep "pull request " | cut -d'/' -f 2 | cut -d' ' -f 1 | cut -c -15 | tr -d '\n')
+            - BRANCH=$(echo $BRANCH_CAP | awk '{print tolower($0)}' | tr -d \')
+            - echo "Incoming branch name is ${BRANCH}.."
+            - aws cloudformation delete-stack --region ${AWS_REGION} --stack-name ${BRANCH}-backend || true
+            - aws codebuild start-build --project-name SolvNow-MySQL-CodeBuild --environment-variables-override "[{\"name\":\"ACTION\",\"value\":\"drop\"},{\"name\":\"BRANCH\",\"value\":\"${BRANCH}\"}]" || true
+            - echo "Pushing Docker image to Dev ECR.."
+            - $(aws ecr get-login --no-include-email)
+            - docker push ${ECR_REPO_DEV}:${COMMIT}
+            - docker push ${ECR_REPO_DEV_NOTIFICATION}:${COMMIT}
+            - docker push ${ECR_REPO_DEV_FRAUD}:${COMMIT}
+            - docker push ${ECR_REPO_DEV_WEBHOOK}:${COMMIT}
+            - docker push ${ECR_REPO_DEV_CHAT}:${COMMIT}
+            - docker push ${ECR_REPO_DEV_INVOICING}:${COMMIT}
+            - docker push ${ECR_REPO_DEV_IDENTITYVERIFICATION}:${COMMIT}
+            - echo "Updating CloudFormation parameters.."
+            - cd CloudFormation/parameters
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG "${ECR_REPO_DEV}:${COMMIT}" '.Parameters.pDockerImage=$jqIMAGE_TAG' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_NOTIFICATION "${ECR_REPO_DEV_NOTIFICATION}:${COMMIT}" '.Parameters.pDockerImageNotification=$jqIMAGE_TAG_NOTIFICATION' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_FRAUD "${ECR_REPO_DEV_FRAUD}:${COMMIT}" '.Parameters.pDockerImageFraud=$jqIMAGE_TAG_FRAUD' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_WEBHOOK "${ECR_REPO_DEV_WEBHOOK}:${COMMIT}" '.Parameters.pDockerImageWebHook=$jqIMAGE_TAG_WEBHOOK' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_CHAT "${ECR_REPO_DEV_CHAT}:${COMMIT}" '.Parameters.pDockerImageChat=$jqIMAGE_TAG_CHAT' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_INVOICING "${ECR_REPO_DEV_INVOICING}:${COMMIT}" '.Parameters.pDockerImageInvoicing=$jqIMAGE_TAG_INVOICING' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_IDENTITYVERIFICATION "${ECR_REPO_DEV_IDENTITYVERIFICATION}:${COMMIT}" '.Parameters.pDockerImageIdentityVerification=$jqIMAGE_TAG_IDENTITYVERIFICATION' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - echo "Packaging CloudFormation template.."
+            - cd ../
+            - aws cloudformation package --region ${AWS_REGION} --template-file solvnow-backend.yaml --s3-bucket ${S3_BUCKET} --s3-prefix cloudformation --output-template-file packaged-backend.yml
+            - echo "Deploying CloudFormation stack.."
+            #Note below command passes formatted raw parameters since CLI doesn't take the parameter files in their current format which CloudFromation needs
+            - echo "Zipping the required files for DB migrations.."
+            - zip -r BackendStack.zip packaged-backend.yml buildspec-api-automation.yml buildspec-mysql-migration.yml migrate.sql parameters/
+            - echo "Uploading package to S3 bucket.."
+            - aws s3 cp --metadata codepipeline-artifact-revision-summary=${BITBUCKET_COMMIT} BackendStack.zip s3://${S3_BUCKET}/Dev/BackendStack.zip  --sse AES256
+            - echo "Build done, check deployment in Dev Pipeline in AWS."
+          services:
+            - docker
+      - step:
+          name: Deploy to SIT
+          trigger: manual
+          deployment: SIT
+          caches:
+            - dotnetcore
+          script:
+            - echo "Building Docker container.."
+            - docker info
+            - docker -D build -t solv-backend-sit . --file Dockerfile
+            - docker images --filter reference=solv-backend-sit
+            - echo "Building Notification container.."
+            - docker -D build -t solv-backend-sit-notification . --file src/Services/Notification/Tigerspike.Solv.Services.Notification/Dockerfile --build-arg ENV_NAME=sit
+            - docker images --filter reference=solv-backend-sit-notification
+            - echo "Building Fraud container.."
+            - docker -D build -t solv-backend-sit-fraud . --file src/Services/Fraud/Tigerspike.Solv.Services.Fraud/Dockerfile --build-arg ENV_NAME=sit
+            - docker images --filter reference=solv-backend-sit-fraud
+            - echo "Building WebHook container.."
+            - docker -D build -t solv-backend-sit-webhook . --file src/Services/WebHook/Tigerspike.Solv.Services.WebHook/Dockerfile --build-arg ENV_NAME=sit
+            - docker images --filter reference=solv-backend-sit-webhook
+            - echo "Building Chat container.."
+            - docker -D build -t solv-backend-sit-chat . --file src/Services/Chat/Tigerspike.Solv.Services.Chat/Dockerfile --build-arg ENV_NAME=sit
+            - docker images --filter reference=solv-backend-sit-chat
+            - echo "Building Invoicing container.."
+            - docker -D build -t solv-backend-sit-invoicing . --file src/Services/Invoicing/Tigerspike.Solv.Services.Invoicing/Dockerfile --build-arg ENV_NAME=sit
+            - docker images --filter reference=solv-backend-sit-invoicing
+            - echo "Building IdentityVerification container.."
+            - docker -D build -t solv-backend-sit-identityverification . --file src/Services/IdentityVerification/Tigerspike.Solv.Services.IdentityVerification/Dockerfile --build-arg ENV_NAME=sit
+            - docker images --filter reference=solv-backend-sit-identityverification
+            - echo "Tagging Docker container.."
+            - COMMIT=$(echo $BITBUCKET_COMMIT | cut -c -7)
+            - echo "Commit hash for tagging is ${COMMIT}"
+            - docker tag solv-backend-sit ${ECR_REPO_SIT}:${COMMIT}
+            - docker tag solv-backend-sit-notification ${ECR_REPO_SIT_NOTIFICATION}:${COMMIT}
+            - docker tag solv-backend-sit-fraud ${ECR_REPO_SIT_FRAUD}:${COMMIT}
+            - docker tag solv-backend-sit-webhook ${ECR_REPO_SIT_WEBHOOK}:${COMMIT}
+            - docker tag solv-backend-sit-chat ${ECR_REPO_SIT_CHAT}:${COMMIT}
+            - docker tag solv-backend-sit-invoicing ${ECR_REPO_SIT_INVOICING}:${COMMIT}
+            - docker tag solv-backend-sit-identityverification ${ECR_REPO_SIT_IDENTITYVERIFICATION}:${COMMIT}
+            - echo "Installing AWS CLI.."
+            - apt-get update
+            - apt-get install -y jq zip python-dev python-pip
+            - pip install awscli
+            - aws --version
+            - echo "Setting up AWS CLI.."
+            - echo $BitbucketUserSecret > BitbucketUserSecret.tmp
+            - base64 -d BitbucketUserSecret.tmp > BitbucketUserSecret.txt
+            - BitbucketUserSecret=$(cat BitbucketUserSecret.txt)
+            - aws configure set region $AWS_REGION
+            - aws configure set aws_access_key_id $BitbucketUserKey
+            - aws configure set aws_secret_access_key $BitbucketUserSecret
+            - echo "Pushing Docker image to SIT ECR.."
+            - $(aws ecr get-login --no-include-email)
+            - docker push ${ECR_REPO_SIT}:${COMMIT}
+            - docker push ${ECR_REPO_SIT_NOTIFICATION}:${COMMIT}
+            - docker push ${ECR_REPO_SIT_FRAUD}:${COMMIT}
+            - docker push ${ECR_REPO_SIT_WEBHOOK}:${COMMIT}
+            - docker push ${ECR_REPO_SIT_CHAT}:${COMMIT}
+            - docker push ${ECR_REPO_SIT_INVOICING}:${COMMIT}
+            - docker push ${ECR_REPO_SIT_IDENTITYVERIFICATION}:${COMMIT}
+            - echo "Updating CloudFormation parameters.."
+            - cd CloudFormation/parameters
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG "${ECR_REPO_SIT}:${COMMIT}" '.Parameters.pDockerImage=$jqIMAGE_TAG' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_NOTIFICATION "${ECR_REPO_SIT_NOTIFICATION}:${COMMIT}" '.Parameters.pDockerImageNotification=$jqIMAGE_TAG_NOTIFICATION' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_FRAUD "${ECR_REPO_SIT_FRAUD}:${COMMIT}" '.Parameters.pDockerImageFraud=$jqIMAGE_TAG_FRAUD' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_WEBHOOK "${ECR_REPO_SIT_WEBHOOK}:${COMMIT}" '.Parameters.pDockerImageWebHook=$jqIMAGE_TAG_WEBHOOK' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_CHAT "${ECR_REPO_SIT_CHAT}:${COMMIT}" '.Parameters.pDockerImageChat=$jqIMAGE_TAG_CHAT' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_INVOICING "${ECR_REPO_SIT_INVOICING}:${COMMIT}" '.Parameters.pDockerImageInvoicing=$jqIMAGE_TAG_INVOICING' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_IDENTITYVERIFICATION "${ECR_REPO_SIT_IDENTITYVERIFICATION}:${COMMIT}" '.Parameters.pDockerImageIdentityVerification=$jqIMAGE_TAG_IDENTITYVERIFICATION' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - echo "Packaging CloudFormation template.."
+            - cd ../
+            - aws cloudformation package --region ${AWS_REGION} --template-file solvnow-backend.yaml --s3-bucket ${S3_BUCKET} --s3-prefix cloudformation --output-template-file packaged-backend.yml
+            - echo "Zipping the required files.."
+            - zip -r BackendStack.zip packaged-backend.yml buildspec-api-automation.yml buildspec-mysql-migration.yml migrate.sql parameters/
+            - echo "Uploading package to S3 bucket.."
+            - aws s3 cp --metadata codepipeline-artifact-revision-summary=${BITBUCKET_COMMIT} BackendStack.zip s3://${S3_BUCKET}/SIT/BackendStack.zip --sse AES256
+            - echo "Work here is done, check deployments in SIT Pipeline in AWS."
+          services:
+            - docker
+      - step:
+          name: Release to UAT
+          trigger: manual
+          image: node:14
+          script:
+            - echo "Preparing Release for UAT.."
+            - git config remote.origin.url git@bitbucket.org:tigerspike/solvnow-backend.git
+            - git config --global user.name "George Saadeh"
+            - git config user.email george.saadeh@tigerspike.com
+            - echo "Creating the new release"
+            - npm install
+            - npm run release -- --dry-run
+            - npm run release -- --no-verify
+            - git branch release/$(git describe --tags) && git push -u origin release/$(git describe --tags)
+            - git pull origin master
+            - git push --follow-tags origin master
+
+    '{release/*}':
+      - step:
+          name: Build then Test dotnet
+          caches:
+            - dotnetcore
+          script:
+            - echo "Building dotnet packages.."
+            - cd src
+            - dotnet restore -nowarn:msb3202,nu1503
+            - dotnet build --no-restore -c Release
+            - echo "Testing dotnet.."
+            - cd ../tests
+            - dotnet vstest **.Tests/bin/Release/**/**.Tests.dll
+            - echo "Publishing dotnet packages.."
+            - cd ../src/Tigerspike.Solv.Api
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../src/Services/Notification/Tigerspike.Solv.Services.Notification
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../Fraud/Tigerspike.Solv.Services.Fraud
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../WebHook/Tigerspike.Solv.Services.WebHook
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../Chat/Tigerspike.Solv.Services.Chat
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../Invoicing/Tigerspike.Solv.Services.Invoicing
+            - dotnet publish --no-restore -c Release -v q -o output
+            - cd ../../IdentityVerification/Tigerspike.Solv.Services.IdentityVerification
+            - dotnet publish --no-restore -c Release -v q -o output
+            - echo "Generate migration script.."
+            - cd ../../../../
+            - dotnet tool install --global dotnet-ef
+            - export PATH="$PATH:/root/.dotnet/tools"
+            - dotnet ef migrations script -p src/Tigerspike.Solv.Infra.Data/Tigerspike.Solv.Infra.Data.csproj -o CloudFormation/migrate.sql --idempotent
+          artifacts: 
+            - src/Tigerspike.Solv.Api/output/**
+            - src/Services/Notification/Tigerspike.Solv.Services.Notification/output/**
+            - src/Services/Fraud/Tigerspike.Solv.Services.Fraud/output/**
+            - src/Services/WebHook/Tigerspike.Solv.Services.WebHook/output/**
+            - src/Services/Chat/Tigerspike.Solv.Services.Chat/output/**
+            - src/Services/Invoicing/Tigerspike.Solv.Services.Invoicing/output/**
+            - src/Services/IdentityVerification/Tigerspike.Solv.Services.IdentityVerification/output/**
+            - CloudFormation/migrate.sql
+      - step:
+          name: Release to UAT
+          deployment: UAT
+          caches:
+            - dotnetcore
+          script:
+            - echo "Building Docker container.."
+            - docker info
+            - docker -D build -t solv-backend-uat . --file Dockerfile
+            - docker images --filter reference=solv-backend-uat
+            - echo "Building Notification container.."
+            - docker -D build -t solv-backend-uat-notification . --file src/Services/Notification/Tigerspike.Solv.Services.Notification/Dockerfile --build-arg ENV_NAME=uat
+            - docker images --filter reference=solv-backend-uat-notification
+            - echo "Building Fraud container.."
+            - docker -D build -t solv-backend-uat-fraud . --file src/Services/Fraud/Tigerspike.Solv.Services.Fraud/Dockerfile --build-arg ENV_NAME=uat
+            - docker images --filter reference=solv-backend-uat-fraud
+            - echo "Building WebHook container.."
+            - docker -D build -t solv-backend-uat-webhook . --file src/Services/WebHook/Tigerspike.Solv.Services.WebHook/Dockerfile --build-arg ENV_NAME=uat
+            - docker images --filter reference=solv-backend-uat-webhook
+            - echo "Building Chat container.."
+            - docker -D build -t solv-backend-uat-chat . --file src/Services/Chat/Tigerspike.Solv.Services.Chat/Dockerfile --build-arg ENV_NAME=uat
+            - docker images --filter reference=solv-backend-uat-chat
+            - echo "Building Invoicing container.."
+            - docker -D build -t solv-backend-uat-invoicing . --file src/Services/Invoicing/Tigerspike.Solv.Services.Invoicing/Dockerfile --build-arg ENV_NAME=uat
+            - docker images --filter reference=solv-backend-uat-invoicing
+            - echo "Building IdentityVerification container.."
+            - docker -D build -t solv-backend-uat-identityverification . --file src/Services/IdentityVerification/Tigerspike.Solv.Services.IdentityVerification/Dockerfile --build-arg ENV_NAME=uat
+            - docker images --filter reference=solv-backend-uat-identityverification
+            - echo "Checking if branch version matches convention.."
+            - VERSION=$(echo $BITBUCKET_BRANCH | cut -d'/' -f 2 | cut -d' ' -f 1 | tr -d '\n')
+            - if [[ $VERSION =~ [0-9]+.[0-9]+.[0-9]+ ]]; then echo "Version is $VERSION"; else echo "${VERSION} is incorrect version format." && set -e && exit 1 ; fi
+            - COMMIT=$(echo $BITBUCKET_COMMIT | cut -c -3)
+            - echo "Version and Commit for tagging is ${VERSION}-${COMMIT}.."
+            - echo "Tagging Docker container.."
+            - docker tag solv-backend-uat ${ECR_REPO_UAT}:${VERSION}-${COMMIT}
+            - docker tag solv-backend-uat-notification ${ECR_REPO_UAT_NOTIFICATION}:${VERSION}-${COMMIT}
+            - docker tag solv-backend-uat-fraud ${ECR_REPO_UAT_FRAUD}:${VERSION}-${COMMIT}
+            - docker tag solv-backend-uat-webhook ${ECR_REPO_UAT_WEBHOOK}:${VERSION}-${COMMIT}
+            - docker tag solv-backend-uat-chat ${ECR_REPO_UAT_CHAT}:${VERSION}-${COMMIT}
+            - docker tag solv-backend-uat-invoicing ${ECR_REPO_UAT_INVOICING}:${VERSION}-${COMMIT}
+            - docker tag solv-backend-uat-identityverification ${ECR_REPO_UAT_IDENTITYVERIFICATION}:${VERSION}-${COMMIT}
+            - echo "Installing AWS CLI.."
+            - apt-get update
+            - apt-get install -y jq zip python-dev python-pip
+            - pip install awscli
+            - aws --version
+            - echo "Setting up AWS CLI.."
+            - echo $BitbucketUserSecret > BitbucketUserSecret.tmp
+            - base64 -d BitbucketUserSecret.tmp > BitbucketUserSecret.txt
+            - BitbucketUserSecret=$(cat BitbucketUserSecret.txt)
+            - aws configure set region $AWS_REGION
+            - aws configure set aws_access_key_id $BitbucketUserKey
+            - aws configure set aws_secret_access_key $BitbucketUserSecret
+            - $(aws ecr get-login --no-include-email)
+            - echo "Pushing Docker image to UAT ECR.."
+            - docker push ${ECR_REPO_UAT}:${VERSION}-${COMMIT}
+            - docker push ${ECR_REPO_UAT_NOTIFICATION}:${VERSION}-${COMMIT}
+            - docker push ${ECR_REPO_UAT_FRAUD}:${VERSION}-${COMMIT}
+            - docker push ${ECR_REPO_UAT_WEBHOOK}:${VERSION}-${COMMIT}
+            - docker push ${ECR_REPO_UAT_CHAT}:${VERSION}-${COMMIT}
+            - docker push ${ECR_REPO_UAT_INVOICING}:${VERSION}-${COMMIT}
+            - docker push ${ECR_REPO_UAT_IDENTITYVERIFICATION}:${VERSION}-${COMMIT}
+            - echo "Updating CloudFormation parameters.."
+            - cd CloudFormation/parameters
+            - echo "Packaging CloudFormation template.."
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG "${ECR_REPO_UAT}:${VERSION}-${COMMIT}" '.Parameters.pDockerImage=$jqIMAGE_TAG' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1            
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_NOTIFICATION "${ECR_REPO_UAT_NOTIFICATION}:${VERSION}-${COMMIT}" '.Parameters.pDockerImageNotification=$jqIMAGE_TAG_NOTIFICATION' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_FRAUD "${ECR_REPO_UAT_FRAUD}:${VERSION}-${COMMIT}" '.Parameters.pDockerImageFraud=$jqIMAGE_TAG_FRAUD' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_WEBHOOK "${ECR_REPO_UAT_WEBHOOK}:${VERSION}-${COMMIT}" '.Parameters.pDockerImageWebHook=$jqIMAGE_TAG_WEBHOOK' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_CHAT "${ECR_REPO_UAT_CHAT}:${VERSION}-${COMMIT}" '.Parameters.pDockerImageChat=$jqIMAGE_TAG_CHAT' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_INVOICING "${ECR_REPO_UAT_INVOICING}:${VERSION}-${COMMIT}" '.Parameters.pDockerImageInvoicing=$jqIMAGE_TAG_INVOICING' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - for i in *.json; do cat $i | jq --arg jqIMAGE_TAG_IDENTITYVERIFICATION "${ECR_REPO_UAT_IDENTITYVERIFICATION}:${VERSION}-${COMMIT}" '.Parameters.pDockerImageIdentityVerification=$jqIMAGE_TAG_IDENTITYVERIFICATION' > $i.tmp && mv $i.tmp $i && cat $i; done || exit 1
+            - echo "Packaging CloudFormation template.." 
+            - cd ../
+            - aws cloudformation package --region ${AWS_REGION} --template-file solvnow-backend.yaml --s3-bucket ${S3_BUCKET} --s3-prefix cloudformation --output-template-file packaged-backend.yml
+            - echo "Zipping the required files.."
+            - zip -r BackendStack.zip packaged-backend.yml buildspec.yml buildspec-notify-newrelic.yml buildspec-mysql-migration.yml migrate.sql parameters/
+            - echo "Uploading package to S3 bucket.."
+            - aws s3 cp --metadata codepipeline-artifact-revision-summary=${BITBUCKET_COMMIT} BackendStack.zip s3://${S3_BUCKET}/Release/BackendStack.zip --sse AES256
+            - echo "Build done, check deployments in Release Pipeline in AWS."
+          services:
+            - docker
+          artifacts:
+            - CloudFormation/BackendStack.zip
+      - step:
+          name: Release to Production
+          deployment: Prod
+          trigger: manual
+          script:
+            - echo "Installing AWS CLI.."
+            - apt-get update
+            - apt-get install -y jq zip python-dev python-pip
+            - pip install awscli
+            - aws --version
+            - echo "Setting up AWS CLI.."
+            - echo $BitbucketUserSecret > BitbucketUserSecret.tmp
+            - base64 -d BitbucketUserSecret.tmp > BitbucketUserSecret.txt
+            - BitbucketUserSecret=$(cat BitbucketUserSecret.txt)
+            - aws configure set region $AWS_REGION
+            - aws configure set aws_access_key_id $BitbucketUserKey
+            - aws configure set aws_secret_access_key $BitbucketUserSecret
+            - echo "Uploading package to S3 bucket.."
+            - cd CloudFormation
+            - aws s3 cp --metadata codepipeline-artifact-revision-summary=${BITBUCKET_COMMIT} BackendStack.zip s3://${S3_BUCKET}/Prod/BackendStackProd.zip --sse AES256
+            - echo "Build done, check deployments in Release Pipeline in AWS."
+
+  pull-requests:
+    '**':
+      - step:
+          name: Sonarqube pull request decoration
+          caches:
+            - dotnetcore
+          script:
+            - echo "Start Sonarqube pull request decoration"
+            - export PATH="$PATH:/root/.dotnet/tools"
+            - cd src
+            - dotnet restore -nowarn:msb3202,nu1503
+            - dotnet sonarscanner begin /k:"solvnow-backend" /d:sonar.host.url=${SONAR_HOST_URL} /d:sonar.login=${SONAR_TOKEN} /d:sonar.pullrequest.key=${BITBUCKET_PR_ID} /d:sonar.pullrequest.branch=${BITBUCKET_BRANCH} /d:sonar.pullrequest.base=master
+            - dotnet build --no-restore -c Release
+            - dotnet sonarscanner end /d:sonar.login=${SONAR_TOKEN}
+            - echo "Job is done."
+ 

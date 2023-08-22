@@ -1,0 +1,1 @@
+UPDATE `Brand` SET TicketsExportEnabled = 1 WHERE `name` = 'HP';

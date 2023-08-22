@@ -1,0 +1,142 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Create new brand
+##################################################
+# @name createBrand
+
+@logo = "https://assets.solvnow.com/bbb/thumbnail.gif"
+@thumbnail = "https://assets.solvnow.com/hp/thumbnail.gif"
+@feePercentage = 0.3
+@ticketPrice = 3
+@vatRate = 0.0000
+@paymentRouteId = 2
+@message = "BBB Induction Done Message"
+@instructions = "BBB Induction Instruction"
+@color = "#ffffff"
+
+POST {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "Name": "BBB",
+    "Thumbnail": {{thumbnail}},
+    "Logo": {{logo}},
+    "Contract": "https://assets.solvnow.com/companyone/contract.txt",
+    "FeePercentage": {{feePercentage}},
+    "TicketPrice": {{ticketPrice}},
+    "VatRate": {{vatRate}},
+    "PaymentRouteId": {{paymentRouteId}},
+    "InductionDoneMessage": {{message}},
+    "InductionInstructions": {{instructions}},
+    "AutomaticAuthorization": true,
+    "UnauthorizedMessage": null,
+    "AgreementContent": null,
+    "AgreementHeading": null,
+    "IsAgreementRequired": true,
+    "InvoicingEnabled": true,
+    "InvoicingDashboardEnabled": true,
+    "WaitMinutesToClose": 480,
+    "TicketsExportEnabled": false,
+    "Color": {{color}},
+    "SuperSolversEnabled": true,
+    "PushBackToClientEnabled": false
+}
+
+@brandId = {{createBrand.response.body.id}}
+
+##################################################
+### Create new client accounts
+##################################################
+# @name createClients
+POST {{api_url}}/brands/{{brandId}}/clients
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	{
+		"Email": "Client.BBB@mailinator.com",
+		"FirstName": "Client",
+		"LastName": "BBB",
+		"Password": "Test@123"
+	}
+]
+
+
+##################################################
+### Bulk instert new advocate applications (internal agents)
+##################################################
+# @name createInternalAgents
+POST {{api_url}}/advocateApplications/bulk
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  applications: [
+    {
+      "Email": "user01.Doe@mailinator.com",
+      "FirstName": "User01",
+      "LastName": "Doe"
+    },
+    {
+      "Email": "user02.Doe@mailinator.com",
+      "FirstName": "User02",
+      "LastName": "Doe"
+    }
+  ],
+  brands: ["{{brandId}}"],
+  source: "CNX",
+  internalAgent: true
+}
+
+
+##################################################
+### TEST ENVIRONMENTS ONLY: Create defined (simplified) key for brand
+##################################################
+PUT {{api_url}}/brands/{{brandId}}/api-key
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"m2m": "bbb-1",
+	"sdk": "bbb-1"
+}
+
+
+##################################################
+### Create unique api keys for brand
+##################################################
+# @name generateApiKey
+POST {{api_url}}/brands/{{brandId}}/api-key
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+@sdkApiKey = {{generateApiKey.response.body.sdk}}
+
+##################################################
+### Add abandon reasons
+##################################################
+POST {{api_url}}/brands/{{brandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+
+]

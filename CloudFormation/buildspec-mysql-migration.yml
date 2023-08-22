@@ -1,0 +1,25 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.7
+    commands:
+      - echo "Updating and installing jq.."
+      - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+      - apt-get update && apt-get install jq
+      - apt-get install -y mysql-client
+  pre_build:
+    commands:
+      - echo "Retrieving MySQL Server credentials.."
+      - ssm_response=$(aws ssm get-parameter --name /${ENV_NAME}/backend/V2/DatabaseSettings/Server --with-decryption)
+      - DBSERVER=$(echo "$ssm_response" | jq -r '.Parameter.Value')
+      - ssm_response=$(aws ssm get-parameter --name /${ENV_NAME}/backend/V2/DatabaseSettings/User --with-decryption)
+      - DBUser=$(echo "$ssm_response" | jq -r '.Parameter.Value')
+      - ssm_response=$(aws ssm get-parameter --name /${ENV_NAME}/backend/V2/DatabaseSettings/Password --with-decryption)
+      - DBPassword=$(echo "$ssm_response" | jq -r '.Parameter.Value')
+  build:
+    commands:
+      - echo "Connecting to ${DBSERVER} & running MySQL query.."
+      - echo "Running migrations"
+      - mysql -h ${DBSERVER} -P 3306 -u ${DBUser} -p${DBPassword} solv < migrate.sql
+      - echo "Migration process completed"

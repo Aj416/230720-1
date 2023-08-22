@@ -1,0 +1,49 @@
+##################################################
+### Request mfa_token for challenge
+##################################################
+# @name getMfaTokenForChallenge
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@mfa_token = {{getMfaTokenForChallenge.response.body.mfa_token}}
+
+
+##################################################
+### Get MFA Token
+##################################################
+# @name getMfaChallenge
+POST https://{{auth0_domain}}/mfa/challenge
+Content-Type: application/json
+
+{
+    "client_id": "{{auth0_clientId}}",
+    "challenge_type": "otp",
+    "mfa_token": "{{mfa_token}}"
+}
+
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "mfa_token": "{{mfa_token}}",
+    "otp": "<enter otp from app>",
+    "grant_type": "http://auth0.com/oauth/grant-type/mfa-otp",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}

@@ -1,0 +1,23 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-include path="./partials/header.mjml" />
+    <mj-section padding-bottom="24px">
+      <mj-column>
+        <mj-text font-size="24px">Our support specialist, {{AdvocateFirstName}}, is here to resolve your query.</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-wrapper mj-class="mjwrapper">
+      <mj-section padding-bottom="24px">
+      </mj-section>
+      <mj-include path="./partials/question.mjml" />
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-text mj-class="mjwarning">Thank you for contacting {{BrandName}} Support! To Continue the chat with {{AdvocateFirstName}}, click the button below</mj-text>
+          <mj-button href="{{ChatUrl}}" mj-class="mj-button">Chat Now</mj-button>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+    <mj-include path="./partials/footer.mjml" />
+  </mj-body>
+</mjml>

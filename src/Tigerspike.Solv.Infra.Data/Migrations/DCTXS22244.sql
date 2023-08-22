@@ -1,0 +1,2 @@
+UPDATE `brandformfield` SET AccessLevel = 3; -- yes! update this for all brands!
+UPDATE `brandformfield` SET AccessLevel = 2 WHERE `Name` = 'productNumberOrModelName'; -- the main point of the story - surface product number to regular solvers (L1)

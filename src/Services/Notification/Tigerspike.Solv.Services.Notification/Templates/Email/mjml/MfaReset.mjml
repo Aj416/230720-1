@@ -1,0 +1,19 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-include path="./partials/header.mjml" />
+    <mj-wrapper mj-class="mjwrapper">
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-text font-size="15px">{{Resources.Emails.MfaReset.Header}}</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding-top="10px">
+        <mj-column>
+          <mj-text mj-class="mjwarning">{{Resources.Emails.MfaReset.Body}}</mj-text>
+          <mj-button href="{{ConsoleUrl}}" mj-class="mj-button">{{Resources.Emails.MfaReset.SetupCTA}}</mj-button>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+  </mj-body>
+</mjml>

@@ -1,0 +1,1 @@
+UPDATE `brand` SET MultiTagEnabled = 1 WHERE Name = 'Neato';

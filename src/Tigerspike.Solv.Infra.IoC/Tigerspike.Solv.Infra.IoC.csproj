@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net5.0</TargetFramework>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MassTransit" Version="7.1.5" />
+		<PackageReference Include="MassTransit.AmazonSQS" Version="7.1.5" />
+		<PackageReference Include="MassTransit.Extensions.DependencyInjection" Version="7.1.5" />
+		<PackageReference Include="Microsoft.Extensions.Http.Polly" Version="5.0.1" />
+		<PackageReference Include="MySql.Data" Version="8.0.17" />
+		<PackageReference Include="Quartz.Serialization.Json" Version="3.0.7" />
+		<PackageReference Include="Refit.Newtonsoft.Json" Version="6.0.38" />
+		<PackageReference Include="Scrutor" Version="3.3.0" />
+		<PackageReference Include="FluentValidation" Version="9.5.4" />
+		<PackageReference Include="MediatR" Version="9.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.13" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="5.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="5.0.0" />
+		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="3.2.4" />
+		<PackageReference Include="Refit" Version="6.0.38" />
+		<PackageReference Include="Refit.HttpClientFactory" Version="6.0.38" />
+		<PackageReference Include="ServiceStack.Redis" Version="5.10.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Tigerspike.Solv.Application\Tigerspike.Solv.Application.csproj" />
+		<ProjectReference Include="..\Tigerspike.Solv.Auth0\Tigerspike.Solv.Auth0.csproj" />
+		<ProjectReference Include="..\BuildingBlocks\Tigerspike.Solv.Core\Tigerspike.Solv.Core.csproj" />
+		<ProjectReference Include="..\BuildingBlocks\Tigerspike.Solv.Infra.Bus\Tigerspike.Solv.Infra.Bus.csproj" />
+		<ProjectReference Include="..\Tigerspike.Solv.Infra.Storage\Tigerspike.Solv.Infra.Storage.csproj" />
+		<ProjectReference Include="..\Tigerspike.Solv.Paypal\Tigerspike.Solv.Paypal.csproj" />
+		<ProjectReference Include="..\Tigerspike.Solv.Search\Tigerspike.Solv.Search.csproj" />
+	</ItemGroup>
+
+</Project>

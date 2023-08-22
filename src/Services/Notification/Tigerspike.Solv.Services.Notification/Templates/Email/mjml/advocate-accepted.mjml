@@ -1,0 +1,60 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-section padding-bottom="24px">
+      <mj-column>
+        <mj-image mj-class="mjlogo" src="{{EmailLogoLocation}}" />
+      </mj-column>
+    </mj-section>
+    <mj-wrapper mj-class="mjwrapper">
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-text font-size="22px">Congratulations! Your application to join Solv has been successful.</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-text>Solv lets you share your expertise directly with customers for products and services you love.
+            Before you can start solving, you first need to set up your account.</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-text>We use one time passwords (OTPs) as an authentication factor. You’ll need an
+            &nbsp;<a href="{{MarketingSiteAuthenticatorAppUrl}}">Authenticator app</a>
+          </mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-button href="{{AdvocateSignUpUrl}}{{Code | url_encode}}" background-color="#ea027c" mj-class="mj-button">Create your account</mj-button>
+        </mj-column>
+      </mj-section>
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-image width="300px" src="{{AdvocateAcceptedEmailIllustrationLocation}}" />
+          <mj-text font-size="22px">What it means to be a Solver</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section>
+        <mj-column>
+          <mj-text font-size="20px">Flexibility</mj-text>
+          <mj-text padding-top="10px">Solv when and where you want</mj-text>
+        </mj-column>
+        <mj-column>
+          <mj-text font-size="20px">Global Brands</mj-text>
+          <mj-text padding-top="10px">Solv for the world's biggest brands</mj-text>
+        </mj-column>
+        <mj-column>
+          <mj-text font-size="20px">Your Rules</mj-text>
+          <mj-text padding-top="10px">Be in control of how much you Solv and earn</mj-text>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+    <mj-section padding="20px">
+        <mj-column>
+          <mj-text font-size="13px">Welcome to Solv.</mj-text>
+        </mj-column>
+      </mj-section>
+  </mj-body>
+</mjml>

@@ -1,0 +1,1 @@
+UPDATE brand SET DefaultCulture = 'it-IT' WHERE ShortCode = 'IT';

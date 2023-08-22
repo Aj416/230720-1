@@ -1,0 +1,6 @@
+<mj-section mj-class="mjheader" padding-bottom="5px">
+  <mj-column>
+    <mj-image mj-class="mjlogo" src="{{BrandLogoUrl}}" />
+    <!-- <mj-text mj-class="mjtitle"> Hi {{CustomerFirstName}} </mj-text> -->
+  </mj-column>
+</mj-section>

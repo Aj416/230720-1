@@ -1,0 +1,198 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+
+##################################################
+### Create new brand
+##################################################
+# @name createBrand
+POST {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Name": "Dell",
+	"Thumbnail": "https://assets.solvnow.com/dell/Dell.png",
+	"Logo": "https://assets.solvnow.com/dell/Dell.png",
+	"ContractUrl": "https://assets.solvnow.com/dell/contract.txt",
+	"ContractInternalUrl": "https://assets.solvnow.com/dell/contract.txt",
+	"CreateTicketSubheader": "Chat Support is available 24/7",
+	"AdvocateTitle": "SUPPORT SPECIALIST",
+	"FeePercentage": 0.3,
+	"TicketPrice": 0.0,
+	"VatRate": 0.0000,
+	"PaymentRouteId": 2,
+	"InductionDoneMessage": "## CONGRATULATIONS! \n\n You have successfully viewed the Dell 101 guidelines. To represent Dell, you'll now need to take a peer knowledge check.",
+	"InductionInstructions": "Dell has put together this 101 guide to get you authorised to Solv for them. \n\n **NOTE: You must not copy, share or duplicate any of the contents of this section!** \n\n Dell is a global leader in home computing, you will be helping users of their products with out of warranty support, so it will be technical in nature on hardware, software and networking type questions. \n\n Support will be 24/7 but we think busiest from Monday to Friday, lighter over the weekend. We expect to see anything from 2000-3000 customers per month to start and grow. \n\n You will earn around $0.80 per chat ticket which will take between 3-10 mins of time to complete.",
+	"AutomaticAuthorization": true,
+	"UnauthorizedMessage": null,
+	"AgreementContent": null,
+	"AgreementHeading": null,
+	"IsAgreementRequired": false,
+	"InvoicingEnabled": true,
+	"InvoicingDashboardEnabled": true,
+	"WaitMinutesToClose": 4320,
+	"Color": "#007DB8",
+	"NpsEnabled": 1,
+	"TagsEnabled": 0,
+	"TicketsExportEnabled": 1,
+	"SuperSolversEnabled": 1,
+	"PushBackToClientEnabled": 1,
+	"SposEnabled": 0,
+	"TicketsImportEnabled": 1,
+	"SposEmail": ""
+}
+
+@brandId = {{createBrand.response.body.id}}
+
+
+##################################################
+### Create induction section for brand
+##################################################
+POST {{api_url}}/brands/{{brandId}}/induction/sections
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Sections": [
+		{
+			"Id": "ad84cc6b-6cf8-11eb-9f7e-0242ac120004",
+			"Name": "Product knowledge",
+			"Order": 1,
+			"Items": [
+				{
+					"Id": "bc140c6a-6cf8-11eb-9f7e-0242ac120004",
+					"Name": "Solv flow",
+					"Order": 1,
+					"Source": "https://assets.solvnow.com/dell/solv-flow.html"
+				}
+			]
+		}
+	]
+}
+
+##################################################
+### Create new client accounts
+##################################################
+# @name createClients
+POST {{api_url}}/brands/{{brandId}}/clients
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	{
+		"Email": "solv+dell@tigerspike.com",
+		"FirstName": "Client",
+		"LastName": "Dell",
+		"Password": "@123QWEasdzxc"
+	}
+]
+
+
+##################################################
+### TEST ENVIRONMENTS ONLY: Create defined (simplified) key for brand
+##################################################
+PUT {{api_url}}/brands/{{brandId}}/api-key
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"m2m": "Dell-1",
+	"sdk": "Dell-1"
+}
+
+##################################################
+### Create quiz
+##################################################
+POST {{api_url}}/brands/{{brandId}}/quiz
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+	"Title": "Final Evaluation Assessment",
+	"Description": "You have successfully viewed the Dell 101 guidelines. To represent Dell, you'll now need to take a peer knowledge check. There are 30 questions but don’t worry, you still pass if you get four questions wrong.",
+	"AllowedMistakes": 0,
+	"FailureMessage": "To Solv for Dell you're going to need pass the assessment.Hit the button below to brush up on your brand knowledge or try the quiz again.",
+	"SuccessMessage": "You're now fully authorised with Dell, so go ahead, pick up your first ticket and start earning right now.",
+	"Questions": [
+		{
+			"Title": "What brands are you solving for?",
+			"IsMultiChoice": false,
+			"Options": [
+				{
+					"Text": "HP",
+					"Correct": false
+				},
+				{
+					"Text": "Samsung",
+					"Correct": false
+				},
+				{
+					"Text": "DELL",
+					"Correct": true
+				}
+			]
+		}
+	]
+}
+
+##################################################
+### Add abandon reasons
+##################################################
+POST {{api_url}}/brands/{{brandId}}/abandon-reasons
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	{ "Name": "Too difficult"},
+	{ "Name": "Complaint"},
+	{ "Name": "Need more info"},
+	{ "Name": "Follow up"},
+	{ "Name": "Taking leave"}
+]
+
+##################################################
+### PRODUCTION ONLY REQUESTS -----------------------------------------------------
+##################################################
+
+##################################################
+### Create production new client accounts
+##################################################
+# @name createClients
+POST {{api_url}}/brands/{{brandId}}/clients
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	{
+		"Email": "holly.steele-nicholson+dell@concentrix.com",
+		"FirstName": "Client",
+		"LastName": "Dell",
+		"Password": "set-password-here"
+	}	
+]
+
+##################################################
+### Create unique api keys for brand
+##################################################
+# @name generateApiKey
+POST {{api_url}}/brands/{{brandId}}/api-key
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+@sdkApiKey = {{generateApiKey.response.body.sdk}}

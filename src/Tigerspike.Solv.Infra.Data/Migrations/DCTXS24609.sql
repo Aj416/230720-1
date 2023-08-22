@@ -1,0 +1,8 @@
+select @brandId := Id from solv.brand where ShortCode = 'WN';
+
+insert into solv.brandformfield (Id,`Name`,Title,TypeId,IsRequired,`Validation`,DefaultValue,`Order`,CreatedDate,ModifiedDate,BrandId,`Options`,IsKey,AccessLevel,Description)
+VALUES 
+(UUID(),'yourProgram','Your Program',3,1,'required','',1,utc_timestamp(),utc_timestamp(),@brandId,'Adobe,Amazon,Arlo,Bytedance,Facebook Oculus,Flipkart,IMVU,Indeed,Lazada,Lineplus,Microsoft,Neato,Netgear,Onfido,Roblox,Samsung,Taboola,TransUrban,Triller,Tripadvisor,Twitter,Facebook,Inspirato,Google,Uber,Clubhouse',0,3,null),
+(UUID(),'yourLocation','Your Location',3,1,'required','',2,utc_timestamp(),utc_timestamp(),@brandId,'India,Egypt,Japan,Poland,Philippines,Ireland,Malaysia,Indonesia,Vietnam,USA,Brazil,China,Bulgaria,Poland/Italy,Aurtralia,Canada,Brazil,Korea,Portugal,Canada/Portugal',0,3,null),
+(UUID(),'urgencyLevel','Urgency Level',3,1,'required','',3,utc_timestamp(),utc_timestamp(),@brandId,'Urgent,Non-urgent',0,3,null),
+(UUID(),'needHelpWith','I need help with',3,1,'required','',4,utc_timestamp(),utc_timestamp(),@brandId,'Anxiety & Stress,Depression & Isolation,Trauma and PTSD,Grief,Relationship Issues,Life Transitions,Anger Management,Sleep or Insomnia,Self-Harming,Peer Relationships,Harassment,Immigrant/Refugee Mental Health,Marital and Premarital,Parenting & Family Challenges,Work Related Stress,Content Related Stress,Other',0,3,null);

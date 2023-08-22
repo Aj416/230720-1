@@ -1,0 +1,21 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-section padding-bottom="24px">
+      <mj-column>
+        <mj-text font-size="24px">Hi {{Name}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-wrapper mj-class="mjwrapper">
+      <mj-section padding-bottom="24px">
+        <mj-column>
+          <mj-text font-size="14px">There are tickets waiting for you to Solv</mj-text>
+        </mj-column>
+        <mj-column>
+          <mj-button href="{{ConsoleUrl}}" mj-class="mj-button">Get a ticket now</mj-button>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+    <mj-include path="./partials/footer.mjml" />
+  </mj-body>
+</mjml>

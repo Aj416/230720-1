@@ -1,0 +1,116 @@
+##################################################
+### Get Client Token
+##################################################
+# @name clientToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{client_email}}",
+    "password":"{{client_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+@cliToken = {{clientToken.response.body.id_token}}
+
+##################################################
+### Create Webhook Subscription - TicketStatusChangedEvent
+##################################################
+# @name createSubscription
+POST {{api_url}}/webhooks
+Content-Type: application/json
+Authorization: Bearer {{cliToken}}
+
+{
+    "eventType": "TicketStatusChangedEvent",
+    "url": 	"https://webhook.site/408703fe-b659-4b1e-9f41-50312cd4e918",
+    "body": 
+    "
+        {
+            eventId: {{ EventId | json }},
+            eventType: {{ EventType | json }},
+            timestamp: {{ Timestamp | isodate | json }},
+            data: {
+                ticketId: {{ TicketId | json }},
+                fromStatus: {{ FromStatus | json }},
+                toStatus: {{ ToStatus | json }},
+                referenceId: {{ ReferenceId | json }},
+                source: {{ Source | json }}
+            }
+        }
+    ",
+    "verb": "post",
+    "contentType": "application/json",
+    "secret": "secret",
+    "authorization": "ApiKey api123"
+}
+
+
+##################################################
+### Create Webhook Subscription - TicketTagsChangedEvent
+##################################################
+# @name createSubscription
+POST {{api_url}}/webhooks
+Content-Type: application/json
+Authorization: Bearer {{cliToken}}
+
+{
+    "eventType": "TicketTagsChangedEvent",
+    "url": 	"https://webhook.site/408703fe-b659-4b1e-9f41-50312cd4e918",
+    "body": 
+    "
+ 		{
+ 			ticket: {
+ 				additional_tags: {{AddedTags | json}},
+ 				remove_tags: {{RemovedTags | json}}
+ 			}
+ 		}
+    ",
+    "verb": "post",
+    "contentType": "application/json",
+    "secret": "secret",
+    "authorization": "ApiKey api123"
+}
+
+##################################################
+### Create Webhook Subscription - ChatMessageAddedEvent
+##################################################
+# @name createSubscription
+POST {{api_url}}/webhooks
+Content-Type: application/json
+Authorization: Bearer {{cliToken}}
+
+{
+    "eventType": "ChatMessageAddedEvent",
+    "url": 	"https://webhook.site/408703fe-b659-4b1e-9f41-50312cd4e918",
+    "body": 
+    "
+        { 
+            TicketId : \"{{Id | string}}\", 
+            MessageId : \"{{MessageId | string}}\", 
+            Message : \"{{Message | string}}\", 
+            MessageType : \"{{MessageType | string}}\", 
+            Date : \"{{Date | string}}\",
+            RelevantTo : {{RelevantTo | json}}, 
+            SentBy : \"{{Sender | string}}\"
+        }
+    ",
+    "verb": "post",
+    "contentType": "application/json",
+    "secret": "secret",
+    "authorization": "ApiKey api123"
+}
+
+##################################################
+### Delete webhook
+##################################################
+
+@webHookId = ''
+
+DELETE {{api_url}}/webhooks/{{webHookId}}
+Content-Type: application/json
+Authorization: Bearer {{cliToken}}

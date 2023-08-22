@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="8.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
+    <PackageReference Include="NEST" Version="6.7.0" />
+    <PackageReference Include="Polly" Version="7.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tigerspike.Solv.Application\Tigerspike.Solv.Application.csproj" />
+    <ProjectReference Include="..\BuildingBlocks\Tigerspike.Solv.Core\Tigerspike.Solv.Core.csproj" />
+    <ProjectReference Include="..\Tigerspike.Solv.Domain\Tigerspike.Solv.Domain.csproj" />
+    <ProjectReference Include="..\Tigerspike.Solv.Infra.Data\Tigerspike.Solv.Infra.Data.csproj" />
+  </ItemGroup>
+
+</Project>

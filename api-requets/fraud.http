@@ -1,0 +1,59 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Search fraud tickets time framed
+##################################################
+GET {{api_url}}/fraud/search?term=l1&pageIndex=0&pageSize=25&from=011220200000&to=201220201014&sortBy=Assignee&sortOrder=0&statuses=FraudConfirmed&level=fraudRisk
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Set fraud status bulk
+##################################################
+@fraudStatus = 2
+
+POST {{api_url}}/fraud/{{fraudStatus}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+    "59bf6cfd-3086-46f1-bbaf-efb499703e16",
+    "8b7c040a-bc71-4693-b6df-059da8a26c2a",
+    "a97515be-f953-44d1-9ee3-4c5ff364394e"
+]
+
+
+##################################################
+### Get fraud ticket details
+##################################################
+@ticketId = a97515be-f953-44d1-9ee3-4c5ff364394e
+
+GET {{api_url}}/fraud/ticket/{{ticketId}}
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Get fraud ticket count
+##################################################
+GET {{api_url}}/fraud/count
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Build Fraud index
+##################################################
+POST {{api_url}}/fraud/index
+Authorization: Bearer {{adminToken}}

@@ -1,0 +1,1 @@
+UPDATE `ticketescalationconfig` set `CustomerMessage` = 'Your issue is being escalated and reallocated. Someone will be with you soon.'

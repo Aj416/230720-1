@@ -1,0 +1,12 @@
+{
+  "eventId": {{ eventId | json }},
+  "eventType": {{ eventType | json }},
+  "timestamp": {{ timestamp | isodate | json }},
+  "data": {
+    "ticketId": {{ data.ticketId | json }},
+    "fromStatus": {{ data.fromStatus | json }},
+    "toStatus": {{ data.toStatus | json }},
+    "referenceId": {{ data.referenceId | json }},
+    "source": {{ data.source | json }}
+  }
+}

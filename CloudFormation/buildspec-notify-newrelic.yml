@@ -1,0 +1,23 @@
+version: 0.2
+env:
+  variables:
+    API_KEY: "NRRA-1c6155beb14c195a3d3de9c20998af7a59eb25ebad"
+    APP_ID: "307554930"
+phases:
+  install:
+    runtime-versions:
+      nodejs: 10
+    commands:
+      - echo "Updating and installing jq.."
+      - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+      - apt-get update && apt-get install jq
+  pre_build:
+    commands:
+      - echo "Getting Docker image ID.."
+      - IMAGE_ID=$(jq -r '.Parameters.pDockerImage' parameters/prod-backend.json)
+      - echo "Image ID is ${IMAGE_ID}.."
+  build:
+    commands:
+      - echo "Sending deployment mark to NewRelic.."
+      - curl -X POST 'https://api.newrelic.com/v2/applications/${APP_ID}/deployments.json' -H 'X-Api-Key:${API_KEY}' -i -H 'Content-Type:application/json' -d '{"deployment":{"revision":${IMAGE_ID},"description":"New deployment, check CI/CD for details."}}'
+      - echo "Deployment is marked."

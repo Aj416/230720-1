@@ -1,0 +1,320 @@
+#The api url
+@apiUrl = https://{{paypal_clientId}}:{{paypal_clientSecret}}@{{paypal_url}}
+
+# Get access token
+# @name paypalToken
+POST {{apiUrl}}/v1/oauth2/token
+
+grant_type=client_credentials
+
+### Get the referral url to redirect the solver to
+@token = {{paypalToken.response.body.access_token}}
+POST {{apiUrl}}/v1/customer/partner-referrals
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "customer_data": {
+      "partner_specific_identifiers": [{
+        "type": "TRACKING_ID",
+        "value": "NourSabounyTrackingId"
+      }]
+    },
+    "requested_capabilities": [{
+      "capability": "API_INTEGRATION",
+      "api_integration_preference": {
+        "partner_id": "{{paypal_api_caller_id}}",
+        "rest_api_integration": {
+          "integration_method": "PAYPAL",
+          "integration_type": "THIRD_PARTY"
+        },
+        "rest_third_party_details": {
+          "partner_client_id": "{{paypal_clientId}}",
+          "feature_list": [
+			"PAYMENT",
+			"REFUND",
+			"PARTNER_FEE",
+			"DELAY_FUNDS_DISBURSEMENT",
+			"ADVANCED_TRANSACTIONS_SEARCH",
+			"ACCESS_MERCHANT_INFORMATION"
+          ]
+        }
+      }
+    }],
+    "web_experience_preference": {
+      "partner_logo_url": "https://assets.solvnow.com/solv/thumbnail.png",
+      "return_url": "http://solvnow.local/dashboard/profile",
+      "action_renewal_url": "https://example.com/renew-prefill-url"
+    },
+    "collected_consents": [{
+      "type": "SHARE_DATA_CONSENT",
+      "granted": true
+    }],
+    "products": [
+      "EXPRESS_CHECKOUT"
+    ]
+}
+
+#Client solver30@mailinator.com
+@payerId = Q37QF5MV4MK7C
+
+#Solver solver17@mailinator.com
+@payeeId = K6XQALBAFDK6Y
+
+### Verify that solver has given permissions:
+GET {{apiUrl}}/v1/customer/partners/{{paypal_api_caller_id}}/merchant-integrations/{{payeeId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###
+GET {{apiUrl}}/v1/customer/partner-referrals/ZjEzNzQyYjQtNDkyOS00NWFkLThmMDMtNzNiNTY2ZDA1MjZmSGFuTHVQdmpGOTRNdnJrTTAxYnFzSFArWFNsMGE1bG5HSWZXL1BZdkxLaz12MQ==
+Authorization: Bearer {{token}}
+
+### Billing Agreements token
+POST {{apiUrl}}/v1/billing-agreements/agreement-tokens
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "description": "Billing Agreement for future Solv tickets charges",
+  "payer":
+  {
+    "payment_method": "PAYPAL"
+  },
+  "plan":
+  {
+    "type": "CHANNEL_INITIATED_BILLING",
+    "merchant_preferences":
+    {
+      "return_url": "http://solvnow.local:3500/profile",
+      "cancel_url": "https://www.paypal.com/checkoutnow/error",
+      "notify_url": "http://solvnow.local:3500/profile",
+      "accepted_pymt_type": "INSTANT",
+      "skip_shipping_address": true,
+      "immutable_shipping_address": true
+    }
+  }
+}
+
+### Billing Agreement finalize
+
+POST {{apiUrl}}/v1/billing-agreements/agreements
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "token_id": "BA-2DU67858TL597822B"
+}
+
+### Check the partner referral
+GET {{apiUrl}}/v1/customer/partners/{{paypal_api_caller_id}}/merchant-integrations/JH4RZLXFJFNP6
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Check the billing agreement details
+GET {{apiUrl}}/v1/payments/billing-agreements/B-8XY688605J832350M
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###########################
+### Transaction Risk
+### This should be called before Payment apis.
+### The tracking id then can be used in the headers for those apis.
+###########################
+@trackingId = dc271183-0929-4b35-a6d7-2f65bee70729
+
+PUT {{apiUrl}}/v1/risk/transaction-contexts/{{paypal_api_caller_id}}/{{trackingId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+	"additional_data": [
+		{
+			"key": "sender_account_id",
+			"value": "22222222-2222-2222-2222-222222222222"
+		},
+		{
+			"key": "sender_create_date",
+			"value": "2019-10-03T16:27:37.93298"
+		},
+		{
+			"key": "receiver_account_id",
+			"value": "11111111-2222-3333-4444-555555555555"
+		},
+		{
+			"key": "receiver_create_date",
+			"value": "2019-10-03T00:00:00"
+		},
+		{
+			"key": "receiver_email",
+			"value": "solv.adv01@mailinator.com"
+		},
+		{
+			"key": "receiver_address_country_code",
+			"value": ""
+		},
+		{
+			"key": "recipient_popularity_score",
+			"value": "03"
+		},
+		{
+			"key": "first_interaction_date",
+			"value": "2019-10-09T05:29:17.5728862Z"
+		},
+		{
+			"key": "txn_count_total",
+			"value": "0"
+		},
+		{
+			"key": "transaction_is_tangible",
+			"value": "0"
+		}
+	]
+}
+
+###########################
+### Read transaction context
+###########################
+GET {{apiUrl}}/v1/risk/transaction-contexts/{{paypal_api_caller_id}}/{{trackingId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###########################
+### Create order
+###########################
+## THIS IS NOT UPDATE TO DATE, WE NOW MAKE TWO PAYMENTS (One to Solver, one to Solv)
+# @name createOrder
+## disbursement_mode can be DELAYED to hold the disbursment until we call the disburse API.
+POST {{apiUrl}}/v2/checkout/orders
+Content-Type: application/json
+Authorization: Bearer {{token}}
+PayPal-Partner-Attribution-Id: concentrixsolv_sb
+
+{
+	"intent": "CAPTURE",
+	"payer": {
+		"payer_id": "{{payerId}}"
+	},
+	"purchase_units": [
+		{
+			"description": "Payment from CompanyOne to Solv Advocate01 for the period: 30 09 2019 12:00 to 07 10 2019 12:00",
+			"invoice_id": "08d74824-6a4a-a6b7-fe87-7fdeb71ea666",
+			"amount": {
+				"currency_code": "USD",
+				"value": 53,
+				"breakdown": {
+					"item_total": {
+						"currency_code": "USD",
+						"value": 53
+					}
+				}
+			},
+			"payee": {
+				"merchant_id": "{{payeeId}}"
+			},
+			"items": [
+				{
+					"name": "Ticket 061f7806-36ff-4b80-84ce-16fd433361eb",
+					"unit_amount": {
+						"currency_code": "USD",
+						"value": 10.60
+					},
+					"quantity": "1"
+				},
+				{
+					"name": "Ticket 2b1c1471-8eb8-4180-9da7-98bce534ad6c",
+					"unit_amount": {
+						"currency_code": "USD",
+						"value": 10.60
+					},
+					"quantity": "1"
+				},
+				{
+					"name": "Ticket b8814ba9-7207-4035-aeaf-30406bdc1cea",
+					"unit_amount": {
+						"currency_code": "USD",
+						"value": 10.60
+					},
+					"quantity": "1"
+				},
+				{
+					"name": "Ticket c1a7c2ca-d1ab-42c7-84bf-7aaae47954f0",
+					"unit_amount": {
+						"currency_code": "USD",
+						"value": 10.60
+					},
+					"quantity": "1"
+				},
+				{
+					"name": "Ticket c1a7c2ca-d1ab-42c7-84bf-7aaae4795400",
+					"unit_amount": {
+						"currency_code": "USD",
+						"value": 10.60
+					},
+					"quantity": "1"
+				}
+			],
+			"payment_instruction": {
+				"disbursement_mode": "INSTANT",
+				"platform_fees": [
+					{
+						"amount": {
+							"currency_code": "USD",
+							"value": 18
+						},
+						"payee": {
+							"merchant_id": "{{paypal_payment_receiver_id}}"
+						}
+					}
+				]
+			}
+		}
+	]
+}
+
+@orderId = {{createOrder.response.body.id}}
+
+###########################
+### Capture order
+###########################
+POST {{apiUrl}}/v2/checkout/orders/{{orderId}}/capture
+Content-Type: application/json
+Authorization: Bearer {{token}}
+PayPal-Request-Id: 111111111-77ed-4896-8e78-5dea20504733
+PayPal-Client-Metadata-Id: {{trackingId}}
+
+{
+  "payment_source": {
+    "token": {
+      "id": "B-4BM2219910814624P",
+      "type": "BILLING_AGREEMENT"
+      }
+    }
+}
+
+
+###########################
+### Get order
+###########################
+# @name getOrder
+GET {{apiUrl}}/v2/checkout/orders/{{orderId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+@captureId = {{getOrder.response.body.purchase_units[0].payments.captures[0].id}}
+
+###########################
+### Disburse order
+###########################
+## In case we create the order with disbursement_mode set to "DELATED",
+## this endpoint is to release the money.
+
+POST {{apiUrl}}/v1/payments/referenced-payouts-items
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "reference_type" : "TRANSACTION_ID",
+    "reference_id" :  "{{captureId}}"
+}

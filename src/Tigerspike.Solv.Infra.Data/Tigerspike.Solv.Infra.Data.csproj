@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Tigerspike.Solv.Domain\Tigerspike.Solv.Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AutoMapper" Version="8.1.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.13" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="3.1.13" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
+        <PackageReference Include="Polly" Version="7.2.0" />
+        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="3.2.4" />
+        <PackageReference Include="ServiceStack.Interfaces" Version="5.10.4" />
+        <PackageReference Include="Z.EntityFramework.Plus.EFCore" Version="3.1.25" />
+        <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.17" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Migrations\*.sql" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="SeedData\Scripts\profiling.sql">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="SeedData\Scripts\users.sql">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="SeedData\Scripts\quartz.sql">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+</Project>

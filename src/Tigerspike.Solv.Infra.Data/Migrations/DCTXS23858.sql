@@ -1,0 +1,1 @@
+UPDATE brandadvocateresponseconfig SET RelevantTo = NULL WHERE `Type` = 9;

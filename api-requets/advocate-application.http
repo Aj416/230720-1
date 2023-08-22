@@ -1,0 +1,156 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Get Advocate Token
+##################################################
+# @name advocateToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{advocate_email}}",
+    "password":"{{advocate_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+
+@advToken = {{advocateToken.response.body.id_token}}
+
+##################################################
+### Create an advocate application
+##################################################
+# @name apply
+POST {{api_url}}/advocateApplications/apply
+Content-Type: application/json
+
+{
+	"firstName": "{{advocate_app_firstName}}",
+	"lastName": "{{advocate_app_lastName}}",
+	"email": "sit-solver06@mailinator.com",
+	"country": "{{advocate_app_country}}",
+	"state": "{{advocate_app_state}}",
+	"address": "{{advocate_app_address}}",
+	"city": "{{advocate_app_city}}",
+	"zipCode": "{{advocate_app_zipcode}}",
+	"isAdult": "{{advocate_app_isAdult}}",
+	"phone": "{{advocate_app_phone}}",
+	"source": "{{advocate_app_source}}",
+	"marketingCheckbox": "{{advocate_app_marketingCheckbox}}",
+	"g-recaptcha-response": "{{advocate_app_captcha}}",
+	"dataPolicyCheckbox": "{{advocate_app_dataPolicyCheckbox}}",
+	"password": "{{advocate_app_password}}"
+}
+
+@appId = {{apply.response.body.id}}
+
+##################################################
+### Export an application data
+##################################################
+POST {{api_url}}/advocateApplications/export
+Content-Type: application/json
+
+{
+	"email":"{{advocate_app_email}}",
+	"g-recaptcha-response": "{{advocate_app_captcha}}"
+}
+
+##################################################
+### Checks an application if it is valid
+##################################################
+POST {{api_url}}/advocateApplications/{{appId}}/validate
+Content-Type: application/json
+
+##################################################
+### Request a deletion link for application
+##################################################
+POST {{api_url}}/advocateApplications/send-delete
+Content-Type: application/json
+
+{
+	"email":"{{advocate_app_email}}",
+	"g-recaptcha-response": "ThisIsATestReCapthaKeyOnlyToBeUsedForNonProdEnvironments"
+}
+
+##################################################
+### Get assignable brands for advocate application
+##################################################
+GET {{api_url}}/advocateApplications/{{appId}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Assign brands to advocate application
+##################################################
+POST {{api_url}}/advocateApplications/{{appId}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"22222222-2222-2222-2222-222222222222"
+]
+
+##################################################
+### Gets advocate application profile question
+##################################################
+GET {{api_url}}/advocateApplications/profile-questions
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Sets advocate application profile question answer
+##################################################
+@applicationId = advocate-guid-here
+POST {{api_url}}/advocateApplications/{{applicationId}}/question
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+{
+	"questionId": "question-guid-here",
+	"answers": [
+		{
+			"questionOptionId": "question-option-guid-here",
+			"questionOptionComboId": "question-combo-id-if-exists",
+			"staticAnswer": ""
+		},
+		{
+			"questionOptionId": "question-option-guid-here",
+			"questionOptionComboId": "question-combo-id-if-exists",
+			"staticAnswer": ""
+		}
+	] 
+}
+
+##################################################
+### Gets advocate application profile question answers
+##################################################
+@applicationId = advocate-guid-here
+GET {{api_url}}/advocateApplications/{{applicationId}}/question
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+##################################################
+### Get profile question for advocate application
+##################################################
+GET {{api_url}}/advocateApplications/questions
+Content-Type: application/json

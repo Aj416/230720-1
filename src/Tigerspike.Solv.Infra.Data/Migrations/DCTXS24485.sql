@@ -1,0 +1,1 @@
+update solv.brand set EnableCustomerEndpoint = 1 where Name = 'CNX1 Wellnest';

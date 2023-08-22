@@ -1,0 +1,102 @@
+@question = {{ticket_question}}
+
+### Get random question
+# @name getRandomQuestion
+GET https://opentdb.com/api.php?amount=1
+
+@question =  {{getRandomQuestion.response.body.results[0].question}}
+
+##################################################
+### Create a ticket
+##################################################
+# @name createTicket
+
+POST {{api_url}}/tickets?apiKey=6vT9cqvqrlS3Rk02xuj9IxEuiKt09z6R
+Content-Type: application/json
+
+{
+    "question": "{{question}}",
+    "email": 	"{{ticket_email}}",
+    "firstname":"{{ticket_firstname}}",
+    "lastName": "{{ticket_lastName}}",
+    "brandId":  "{{ticket_brandId}}"
+}
+
+@ticketId = {{createTicket.response.body.id}}
+@customerToken = {{createTicket.response.body.token}}
+
+##################################################
+### Get ticket for customer
+##################################################
+GET {{api_url}}/tickets/{{ticketId}}
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+##################################################
+### Reopen a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/reopen
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+##################################################
+### Close a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/close
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+    "closedBy": "EndChat"
+}
+
+##################################################
+### Set a csat of a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/csat
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+    "csat": 5
+}
+
+##################################################
+### Get customer token for a ticket
+##################################################
+
+GET {{api_url}}/tickets/{{ticketId}}/customer-token
+Content-Type: application/json
+
+##################################################
+### Send a message for a ticket
+### Don't use the same client id twice, or the web app won't show it
+##################################################
+POST {{api_url}}/chat/{{ticketId}}/messages
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+    "message":"Customer test message",
+    "clientMessageId":"af560450-1cc0-11ea-9e97-53786e71ad47"
+}
+
+##################################################
+### Set a additional feedback for a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/additional-feedback
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+    "additionalFeedBack": "Feedback here"
+}
+
+###
+@customerEmail = ''
+
+##################################################
+### Get last 10 customer tickets
+##################################################
+GET {{api_url}}/customers/{{customerEmail}}?apiKey=6vT9cqvqrlS3Rk02xuj9IxEuiKt09z6R
+Content-Type: application/json

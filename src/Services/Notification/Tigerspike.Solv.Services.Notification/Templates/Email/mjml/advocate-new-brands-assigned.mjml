@@ -1,0 +1,23 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-section mj-class="mjheader" padding-bottom="5px">
+      <mj-column>
+        <mj-text mj-class="mjtitle"> Hi {{AdvocateFirstName}} </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-wrapper mj-class="mjwrapper" >
+      <mj-section text-align="left">
+        <mj-column>
+          <mj-text>New brands have been added to your profile!</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section>
+        <mj-column>
+          <mj-button href="{{ConsoleUrl}}" mj-class="mj-button">View your new brands now</mj-button>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+    <mj-include path="./partials/footer.mjml" />
+  </mj-body>
+</mjml>

@@ -1,0 +1,45 @@
+@ticketId = 101dd7fe-8046-4dbc-86da-08c4c476a926
+@messageId = ccd74f19-87f4-4bdf-bc88-722ddb0eb8e4
+@customerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjVlNWNkNzU1LWNiM2YtNDhlYy1hNTA2LTljM2NiOWYwMWM2OCIsInN1YiI6IjVlNWNkNzU1LWNiM2YtNDhlYy1hNTA2LTljM2NiOWYwMWM2OCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL3NpZCI6IjEwMWRkN2ZlLTgwNDYtNGRiYy04NmRhLTA4YzRjNDc2YTkyNiIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkN1c3RvbWVyIiwiZXhwIjoxNTg4MzU0NjEzLCJpc3MiOiJsb2NhbGhvc3QiLCJhdWQiOiJ1bHVjcktkUE5NM1hFY3RQM2Z2WkV5UHVvMkY5SE5VTiJ9.h5lanGHucDUk_u1wwOYqV78p7trrnGrzUL_U014iEEY
+
+##################################################
+### Get Advocate Token
+##################################################
+# @name advocateToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{advocate_email}}",
+    "password":"{{advocate_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+@advToken = {{advocateToken.response.body.id_token}}
+
+POST {{api_url}}/chat/{{ticketId}}/messages
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+[
+	{
+	    "message": "This a message",
+	    "clientMessageId": "11111111-0000-1111-1111-111111111111"
+	}
+]
+
+##################################################
+### Post reposonse to the chat action
+##################################################
+# @name postActionResponse
+POST {{api_url}}/chat/{{ticketId}}/messages/{{messageId}}/action
+Content-Type: application/json
+Authorization: Bearer {{customerToken}}
+
+{
+	"options": [ "true" ]
+}

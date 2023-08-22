@@ -1,0 +1,67 @@
+##################################################
+@apiToken = y6PuOe8njNeFKolDUe1ICx8mLKUQWczjPULAmjbm
+@login = lukasz.krzykowski@tigerspike.com
+@tokenFormat = {{login}}/token:{{apiToken}}
+@subdomain = neatorobotics1522186678
+@zendeskApiUrl = https://{{subdomain}}.zendesk.com/api/v2
+@solvApiUrl = https://sandbox-api.solvnow.com/v1
+@apiKey = iba7dmmVgqxupIHnAW6AgJOACkkjEFF5
+@brandId = 411a3bd0-f62e-11e9-a55c-069a7a2863ba
+
+## this one have to be manually put as base64 using command like: echo {{tokenFormat}} | base64
+@token = bHVrYXN6Lmtyenlrb3dza2lAdGlnZXJzcGlrZS5jb20vdG9rZW46eTZQdU9lOG5qTmVGS29sRFVlMUlDeDhtTEtVUVdjempQVUxBbWpibQ==
+
+##################################################
+### Create target
+##################################################
+# @name createTarget
+POST {{zendeskApiUrl}}/targets.json
+Content-Type: application/json
+Authorization: Basic {{token}}
+
+{
+	"target": {
+		"type": "http_target",
+		"title": "Solv - create ticket endpoint",
+		"active": true,
+		"target_url": "{{solvApiUrl}}/tickets?apiKey={{apiKey}}",
+		"method": "post",
+		"content_type": "application/json"
+	}
+}
+
+@targetId = {{createTarget.response.body.target.id}}
+
+
+##################################################
+### Create trigger
+##################################################
+# @name createTrigger
+POST {{zendeskApiUrl}}/triggers.json
+Content-Type: application/json
+Authorization: Basic {{token}}
+
+{
+	"trigger": {
+		"title": "Solv - create ticket",
+		"active": true,
+		"conditions": {
+			"any": [
+				{ 
+					"field": "status", 
+					"operator": "is", 
+					"value": "new" 
+				}
+			]
+		},
+		"actions": [
+			{ 
+				"field": "notification_target", 
+				"value": [
+					"{{targetId}}",
+					"{\n    \"question\": \"{{ticket.title}}: {{ticket.description}}\",\n    \"email\": \t\"{{ticket.requester.email}}\",\n    \"firstname\":\"{{ticket.requester.first_name}}\",\n    \"lastName\": \"{{ticket.requester.last_name}}\",\n    \"brandId\":  \"{{brandId}}\",\n    \"referenceId\": \"{{ticket.id}}\",\n\t\"source\": \"{{ticket.via}}\"\n}"
+				]
+			}
+		]
+	}
+}

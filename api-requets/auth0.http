@@ -1,0 +1,146 @@
+##################################################
+### Get management token
+##################################################
+# @name getMgmtToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"client_credentials",
+    "client_id": "{{auth0_clientid_m2m}}",
+    "client_secret": "{{auth0_clientsecret_m2m}}",
+    "audience": "https://{{auth0_domain}}/api/v2/"
+}
+###
+
+@mgmtToken = {{getMgmtToken.response.body.access_token}}
+
+
+##################################################
+### Create user on Auth0 manually
+##################################################
+POST https://{{auth0_domain}}/api/v2/users
+Content-Type: application/json
+Authorization: Bearer {{mgmtToken}}
+
+{
+  "email": "{{auth0_user_email}}",
+  "user_metadata": {},
+  "blocked": false,
+  "email_verified": true,
+  "app_metadata": {},
+  "given_name": "{{auth0_user_firstname}}",
+  "family_name":  "{{auth0_user_lastName}}",
+  "name": "{{auth0_user_firstname}} {{auth0_user_lastName}}",
+  "user_id": "{{auth0_user_id}}",
+  "connection": "Username-Password-Authentication",
+  "password": "{{auth0_user_password}}"
+}
+
+
+##################################################
+### Create admin
+##################################################
+POST https://{{auth0_domain}}/api/v2/users
+Content-Type: application/json
+Authorization: Bearer {{mgmtToken}}
+
+{
+  "email": "otro_admin@solvnow.com",
+  "user_metadata": {},
+  "blocked": false,
+  "email_verified": true,
+  "app_metadata": {},
+  "given_name": "Admin",
+  "family_name":  "Solv",
+  "name": "Admin Otro",
+  "user_id": "ad111111-1111-1111-1111-111111111111",
+  "connection": "Username-Password-Authentication",
+  "password": "{{auth0_user_password}}"
+}
+
+
+##################################################
+### Create Advocate
+##################################################
+POST https://{{auth0_domain}}/api/v2/users
+Content-Type: application/json
+Authorization: Bearer {{mgmtToken}}
+
+{
+  "email": "otro_advocate@solvnow.com",
+  "user_metadata": {},
+  "blocked": false,
+  "email_verified": true,
+  "app_metadata": {},
+  "given_name": "Advocate",
+  "family_name":  "Solv",
+  "name": "Advocate Otro",
+  "user_id": "11111111-2222-3333-4444-555555555555",
+  "connection": "Username-Password-Authentication",
+  "password": "{{auth0_user_password}}"
+}
+
+### Assign a Role
+### PS: use the (Get /roles) request below to get the id of the existing roles.
+@auth_pref = auth0%7C
+@userId = ffc46117-7189-4f1d-976c-389dbc177d73
+
+POST https://{{auth0_domain}}/api/v2/users/{{auth_pref}}{{userId}}/roles
+Content-Type: application/json
+Authorization: Bearer {{mgmtToken}}
+
+{ 
+	"roles": ["rol_6DNZr6P5MGeEtYr2"]
+}
+
+### Get the role of the advocate
+GET https://{{auth0_domain}}/api/v2/users/{{auth_pref}}{{userId}}/roles
+Content-Type: application/json
+Authorization: Bearer {{mgmtToken}}
+
+##################################################
+### Create client
+##################################################
+# @name createClient
+POST https://{{auth0_domain}}/api/v2/users
+Content-Type: application/json
+Authorization: Bearer {{mgmtToken}}
+
+{
+  "user_id": "471e46c3-704b-11ea-9183-0242ac120005",
+  "password": "Test@123",
+  "email": "solv+br1@tigerspike.com",
+  "name": "Client BR1",
+  "user_metadata": {},
+  "blocked": false,
+  "email_verified": true,
+  "app_metadata": {},
+  "given_name": "Client",
+  "family_name":  "Solv",
+  "connection": "Username-Password-Authentication"
+}
+
+@clientUserId = {{createClient.response.body.user_id}}
+
+##################################################
+### Get client role id
+##################################################
+# @name getClientRole
+GET https://{{auth0_domain}}/api/v2/roles?name_filter=Client
+Content-Type: application/json
+Authorization: Bearer {{mgmtToken}}
+
+@clientRoleId = {{getClientRole.response.body.*.id}}
+
+##################################################
+### Assign client role
+##################################################
+# @name assignClientRole
+POST https://{{auth0_domain}}/api/v2/users/{{clientUserId}}/roles
+Content-Type: application/json
+Authorization: Bearer {{mgmtToken}}
+
+{ 
+	"roles": ["{{clientRoleId}}"]
+}

@@ -1,0 +1,429 @@
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+###
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Get advocate applications that need review
+##################################################
+# @name getReview
+GET {{api_url}}/advocateApplications/to-review?pageSize=25&sortBy=CreatedDate&sortOrder=DESC
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Get advocate applications that are invited
+##################################################
+# @name getInvited
+GET {{api_url}}/advocateApplications/invited?pageSize=25&sortBy=CreatedDate&sortOrder=DESC
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Get advocate applications that are not suitable
+##################################################
+# @name getNotSuitable
+GET {{api_url}}/advocateApplications/not-suitable?pageSize=25&sortBy=CreatedDate&sortOrder=DESC
+Authorization: Bearer {{adminToken}}
+
+
+// TODO: change the id if you want to operate on specific one
+@appId = {{getInvited.response.body.items[0].id}}
+
+##################################################
+### Invite an application advocate
+##################################################
+POST {{api_url}}/advocateApplications/{{appId}}/invite
+Content-Type: application/json
+Authorization: Bearer YUD7KmCpcQgyabfpFe/nVrnT8kKvlUcItOCbTAdeAPI=
+
+##################################################
+### Decline an application advocate
+##################################################
+POST {{api_url}}/advocateApplications/decline
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "Items": [
+    "11111111-2222-3333-4444-555555555555",
+    "33333333-3333-4444-5555-666666666666"
+  ]
+}
+
+##################################################
+### Search advocates
+##################################################
+GET {{api_url}}/advocates/search?term=quiz&pageIndex=0&pageSize=25&sortBy=invitedStatus&sortOrder=0&statuses=Verified,Unverified
+Authorization: Bearer {{adminToken}}
+
+@advocateId = 22222222-3333-4444-5555-666666666666
+
+##################################################
+### Search advocates applications
+##################################################
+GET {{api_url}}/advocateApplications/search?term=01/10/2020&pageIndex=0&pageSize=25&sortBy=invitationDate&sortOrder=1&statuses=invited
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Get advocate info
+##################################################
+GET {{api_url}}/advocates/{{advocateId}}
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Block a user
+##################################################
+POST {{api_url}}/users/{{advocateId}}/block
+Authorization: Bearer {{adminToken}}
+
+@ticketId = 1b8c5ad3-ad07-4f70-8d5b-190d14421aa2
+
+##################################################
+### Get ticket info
+##################################################
+GET {{api_url}}/tickets/{{ticketId}}
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Search ticekets time framed
+##################################################
+GET {{api_url}}/tickets/search?pageIndex=0&pageSize=25&from=200720190000&to=310820191014&sortBy=createdDate&sortOrder=desc&statuses=Assigned,Solved,Closed
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Search ticekets (no time frame)
+##################################################
+GET {{api_url}}/tickets/search?term=Solv Advocate01&pageIndex=0&pageSize=25&sortBy=advocateFullName&sortOrder=desc&statuses=Assigned,Solved,Closed
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Search fraud tickets time framed
+##################################################
+GET {{api_url}}/tickets/fraud-search?term=l3&pageIndex=0&pageSize=25&from=201020200000&to=201120201014&sortBy=level&sortOrder=1&statuses=fraudSuspected&level=fraudRisk
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Start invoice generation for last week
+##################################################
+GET {{api_url}}/admin/start-invoicing-cycle?startDate=270220200005
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Turn on/off the recurring invoicing cycle job
+##################################################
+GET {{api_url}}/admin/recurring-invoicing-cycle/true
+Authorization: Bearer {{adminToken}}
+
+
+##################################################
+### Export all advocate applications.
+##################################################
+GET {{api_url}}/advocateApplications/export
+Authorization: Bearer {{adminToken}}
+
+
+##################################################
+### Pay advocate invoice 
+##################################################
+@advocateInvoiceId = 08d79814-6041-6d6e-6562-51b9c077a7e6
+
+POST {{api_url}}/admin/pay/advocate/{{advocateInvoiceId}}
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Pay client invoice 
+##################################################
+@clientInvoiceId = 08d79814-6014-6d8c-0708-60b7b2c637a9
+
+POST {{api_url}}/admin/pay/platform/{{clientInvoiceId}}
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Assign brand to advocate applications
+##################################################
+POST {{api_url}}/brands/{{ticket_brandId}}/assign
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"2c4b2ee4-a469-4889-8725-59d5345fecc3",
+	"5e83042e-71ae-45f5-83bb-1243e7baaa2c"
+]
+
+
+##################################################
+### Get all brands in the system
+##################################################
+GET {{api_url}}/brands
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Import tickets
+##################################################
+@brandId = 22222222-2222-2222-2222-222222222222
+@closeTickets = true
+
+POST {{api_url}}/tickets/import?brandId={{brandId}}&closeTickets={{closeTickets}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+  {
+    "question": "2050000006821098",
+    "referenceId": "2050000006821002",
+    "firstName": "Lazada",
+    "lastName": "Customer",
+    "email": "lazada.customer@concentrix.com",
+    "advocateEmail": "solv.adv01@mailinator.com",
+    "createdDate": "2019-11-10 17:52:09",
+    "reservedDate": "2019-11-10 17:52:09",
+    "assignedDate": "2019-11-10 17:52:09",
+    "solvedDate": "2019-11-10 17:53:19",
+    "closedDate": "2019-11-10 17:53:19",
+    "complexity": 5,
+    "csat": 1,
+    "tags": ["software"],
+    "price": 15.99
+  }
+]
+
+##################################################
+### Generate Export data for CSV
+##################################################
+GET {{api_url}}/advocates/exportCsv
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Schedule ticket export
+##################################################
+POST {{api_url}}/tickets/export?from=010120200000
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+
+##################################################
+### Force ticket escalation
+##################################################
+POST {{api_url}}/tickets/9b272479-fdd8-4597-bfcf-e41801c286e5/escalate
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Get advocate invoices from last invoicing cycle
+##################################################
+@invoiceId = 08d7afd2-2266-99b4-25ce-66033ae7bf8e
+
+GET {{api_url}}/invoices/advocates/{{invoiceId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Returns list of all solved tickets without responses from customer for specified period of time are closed
+##################################################
+GET {{api_url}}/admin/tickets-when-no-response
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Ensures that all solved tickets without responses from customer for specified period of time are closed
+##################################################
+POST {{api_url}}/admin/close-tickets-when-no-response
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+
+##################################################
+### Bulk instert new advocate applications
+##################################################
+# @name bulk-insert
+POST {{api_url}}/advocateApplications/bulk
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  applications: [
+    {
+      "Email": "user01@mailinator.com",
+      "FirstName": "User01",
+      "LastName": "Doe"
+    },
+    {
+      "Email": "user02@mailinator.com",
+      "FirstName": "User02",
+      "LastName": "Doe"
+    }
+  ],
+  brands: ["22222222-2222-2222-2222-222222222222"],
+  source: "CNX",
+  internalAgent: true
+}
+
+##################################################
+### Add new Whitelist
+##################################################
+POST {{api_url}}/brands/{{brandId}}/Whitelist
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"phrase1",
+	"phrase2"
+]
+
+##################################################
+### Get ticket statistics overview for a given date range
+##################################################
+GET {{api_url}}/tickets/statistics/overview?from=020319871200&to=030319871200
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Get ticket statistics overview without a given date range
+##################################################
+GET {{api_url}}/tickets/statistics/overview
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Set the missing conversation attributes
+##################################################
+POST {{api_url}}/admin/set-conversation-attributes
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Set the super flag for super solvers
+##################################################
+POST {{api_url}}/admin/set-super
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Create new super solver accounts
+##################################################
+# @name createSuperSolvers
+POST {{api_url}}/advocates/super-solvers
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	{
+		"Email": "solv.test.supersolver01@mailinator.com",
+		"FirstName": "TestFirst",
+		"LastName": "TestLast",
+		"CountryCode": "GB",
+		"Password": "Test@123"
+	}
+]
+
+##################################################
+### Assign brands to advocate
+### For SuperSolvers - create them as authorised users
+##################################################
+POST {{api_url}}/advocates/{{advocateId}}/brands?authorised=true
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+[
+	"b3333333-3333-3333-3333-333333333333",
+	"b4444444-4444-4444-4444-444444444444"
+]
+
+##################################################
+### Create a new admin account
+##################################################
+POST {{api_url}}/admin
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "Email": "solv.test.admin01@mailinator.com",
+  "FirstName": "SolvTest",
+  "LastName": "Admin",
+  "Password": "TestAdmin@123"
+}
+
+
+@userId = 11111111-2222-3333-4444-555555555555
+##################################################
+### Block user
+##################################################
+POST {{api_url}}/users/{{userId}}/block
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Unblock user
+##################################################
+POST {{api_url}}/users/{{userId}}/unblock
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Close ticket created within 30 days retrospectively cutoff 30 days
+##################################################
+POST {{api_url}}/admin/ticketclose-within30days-retro
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Get advocate invoices
+##################################################
+GET {{api_url}}/invoices/advocates?PageIndex=0&PageSize=25&sortOrder=Desc&sortBy=createdDate
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Close ticket created before 30 days retrospectively cutoff 30 days
+##################################################
+POST {{api_url}}/admin/ticketclose-before30days-retro
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Upload tickets import to S3 bucket
+##################################################
+POST {{api_url}}/tickets/import
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=abcde12345
+
+--abcde12345
+Content-Disposition: form-data; name="file"; filename="Test.csv"
+Content-Type: text/csv
+
+< ./import/Test.csv
+--abcde12345
+Content-Disposition: form-data; name="metadata"
+Content-Type: application/json
+
+{
+    "metadata": {
+        "Price": "12",
+        "ClosedDate": "2021-01-22T06:33:57.376Z",
+        "Tags": "08d82266-c555-4954-8dc8-4a055deb981d,14546556-3ac3-11eb-9c14-0a694c56027c",
+        "BrandId": "22222222-2222-2222-2222-222222222222",
+        "UserId": "ad111111-1111-1111-1111-111111111111"
+    }
+}
+--abcde12345--
+
+
+##################################################
+### retrospective-update-supersolver-in-advocateapplication
+##################################################
+POST {{api_url}}/advocateApplications/retrospective-update-supersolver-in-advocateapplication
+Authorization: Bearer {{adminToken}}

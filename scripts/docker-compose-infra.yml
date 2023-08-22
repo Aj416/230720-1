@@ -1,0 +1,119 @@
+version: "3.5"
+services:
+  solv.mysql:
+    platform: linux/x86_64
+    image: mysql:5.7
+    container_name: solv.mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: T!g3rsp!k3
+      MYSQL_USER: solv.api
+      MYSQL_PASSWORD: Billions123
+    entrypoint:
+      sh -c "
+        echo 'CREATE DATABASE IF NOT EXISTS solv; CREATE DATABASE IF NOT EXISTS `solv.invoicing`; GRANT ALL ON *.* TO `solv.api`;' > /docker-entrypoint-initdb.d/init.sql;
+        /usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --lower_case_table_names=1" 
+    networks:
+      - solv
+
+  solv.redis:
+    image: redis:latest
+    container_name: solv.redis
+    ports:
+      - "6379:6379"
+    networks:
+      - solv
+
+  solv.quartz:
+    image: masstransit/quartz:7.1.5
+    ports:
+      - "5002:80"
+    environment:
+      MT_TRANSPORT: 'SQS'
+      MT_SQS__REGION: ''
+      MT_Scheduler: 'local-quartz-sqs'
+      MT_Quartz__InstanceName: 'MassTransit-Quartz'
+      MT_Quartz__Queue: 'local-quartz-sqs'
+      MT_Quartz__ConnectionString: 'Server=solv.mysql;Port=3306;Database=solv;Uid=solv.api;Pwd=Billions123;UseAffectedRows=True;TreatTinyAsBoolean=True'
+      MT_Quartz__Provider: 'MySql'
+      MT_Quartz__DriverDelegateType: 'Quartz.Impl.AdoJobStore.MySQLDelegate, Quartz'
+    networks:
+      - solv
+    logging:
+      driver: none
+    depends_on:
+      - solv.mysql
+      - localstack
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.7.0
+    container_name: solv.elasticsearch
+    ports:
+      - "9200:9200"
+    environment: 
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    networks: 
+      - solv
+
+  solv.dynamodb:
+    image: amazon/dynamodb-local
+    container_name: solv.dynamodb
+    entrypoint: java
+    command: "-jar DynamoDBLocal.jar -sharedDb"
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - solv
+
+  localstack:
+    image: localstack/localstack:0.10.9
+    container_name: solv.localstack
+    ports:
+      - "4575:4575"
+      - "4576:4576"
+      - "8080:8080"
+    environment:
+      - SERVICES=sns,sqs
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - AWS_DEFAULT_REGION=eu-west-1
+      - PORT_WEB_UI=${PORT_WEB_UI- }
+      - HOSTNAME=localhost
+      - HOSTNAME_EXTERNAL=localhost
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - HOST_TMP_FOLDER="${TMPDIR:-/tmp}/localstack"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    tmpfs:
+      - /tmp/localstack:exec,mode=600
+    networks:
+      solv:
+        aliases:
+          - docker.localhost
+
+  # setup-resources:
+  #   image: mesosphere/aws-cli
+  #   volumes:
+  #     - ./dev_env:/project/dev_env
+  #   environment:
+  #     - AWS_ACCESS_KEY_ID=test
+  #     - AWS_SECRET_ACCESS_KEY=test
+  #     - AWS_DEFAULT_REGION=eu-west-1
+  #   entrypoint: /bin/sh -c
+  #   command: >
+  #     "
+  #       sleep 10;
+  #       aws sqs create-queue --endpoint-url=http://localstack:4576 --queue-name ticket;
+  #     "
+  #   networks:
+  #     - solv
+  #   depends_on:
+  #     - localstack
+
+networks:
+  solv:
+    name: solv
+    driver: bridge

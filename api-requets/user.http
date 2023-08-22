@@ -1,0 +1,82 @@
+##################################################
+### Get Advocate Token
+##################################################
+# @name advocateToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{advocate_email}}",
+    "password":"{{advocate_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+
+@advToken = {{advocateToken.response.body.id_token}}
+
+##################################################
+### Get Admin Token
+##################################################
+# @name getAdminToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{admin_email}}",
+    "password":"{{admin_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "client_secret": "{{auth0_clientSecret}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+
+@adminToken = {{getAdminToken.response.body.id_token}}
+
+##################################################
+### Fetch User Info
+##################################################
+# @name userInfo
+GET {{api_url}}/userinfo
+Accept: application/json
+Authorization: Bearer {{advToken}}
+
+@userId = {{userInfo.response.body.id}}
+
+##################################################
+### Fetch brands Info
+##################################################
+GET {{api_url}}/users/{{userId}}/brands
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+
+##################################################
+### Set new phone number
+##################################################
+POST {{api_url}}/users/{{userId}}/phone
+Content-Type: application/json
+Authorization: Bearer {{advToken}}
+
+{
+    "phone": "+12345"
+}
+
+##################################################
+### Send Verification Email
+##################################################
+POST {{api_url}}/users/{{userId}}/sendverificationmail
+Content-Type: application/json
+
+##################################################
+### Reset MFA enrollment for user
+##################################################
+DELETE {{api_url}}/users/11111111-2222-3333-4444-555555555555/mfa
+Authorization: Bearer {{adminToken}}
+

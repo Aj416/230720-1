@@ -1,0 +1,17 @@
+<mjml>
+  <mj-include path="./partials/head.mjml" />
+  <mj-body>
+    <mj-include path="./partials/header.mjml" />
+    <mj-section padding-bottom="24px">
+      <mj-column>
+        <mj-text font-size="24px">{{Resources.Emails.TicketCreated.Body}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-wrapper mj-class="mjwrapper">
+      <mj-section padding-bottom="24px">
+      </mj-section>
+      <mj-include path="./partials/question.mjml" />
+    </mj-wrapper>
+    <mj-include path="./partials/footer.mjml" />
+  </mj-body>
+</mjml>

@@ -1,0 +1,146 @@
+##################################################
+### Get Client Token
+##################################################
+# @name clientToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{client_email}}",
+    "password":"{{client_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+@cliToken = {{clientToken.response.body.id_token}}
+
+##################################################
+### Fetch User Info
+##################################################
+# @name userInfo
+GET {{api_url}}/userinfo
+Accept: application/json
+Authorization: Bearer {{cliToken}}
+
+@userId = {{userInfo.response.body.id}}
+
+@advocateId = 11111111-2222-3333-4444-555555555555
+##################################################
+### Get advocate info
+##################################################
+GET {{api_url}}/advocates/{{advocateId}}
+Authorization: Bearer {{cliToken}}
+
+@ticketId = 7f4ed939-e7b3-4dbf-ad41-9fbe034aae1a
+##################################################
+### Get ticket info
+##################################################
+GET {{api_url}}/tickets/{{ticketId}}
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Get client brand
+##################################################
+GET {{api_url}}/users/{{client_id}}/brands
+Accept: application/json
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Search advocates
+##################################################
+GET {{api_url}}/advocates/search?pageIndex=0&pageSize=25&sortBy=status&sortOrder=desc&statuses=Authorized
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Search ticekets time framed
+##################################################
+GET {{api_url}}/tickets/search?pageIndex=0&pageSize=25&from=200720190000&to=310820191014&sortBy=createdDate&sortOrder=desc&statuses=Assigned,Solved,Closed
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Ticket statistics / billing-cycle
+##################################################
+GET {{api_url}}/tickets/statistics/billing-cycle
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Ticket statistics / escalated
+##################################################
+GET {{api_url}}/tickets/statistics/escalated
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Get Client Info
+##################################################
+GET {{api_url}}/userInfo
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Get PayPal redirect url
+##################################################
+GET {{api_url}}/brands/paypal-redirect-url
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Setup payment account
+##################################################
+POST {{api_url}}/brands/setup-payment
+Content-Type: application/json
+Authorization: Bearer {{cliToken}}
+
+{
+  "billingAgreementToken": "BA-8AA44753J12788334"
+}
+
+
+##################################################
+### Pay advocate invoice from a specific brand.
+##################################################
+# Notice that the passed brand Id is ignored for Client role.
+
+@brandId = 22222222-2222-2222-2222-222222222222
+@advocateInvoiceId = 49958f8d-b3b4-4e29-bd3d-a49348158252
+
+POST {{api_url}}/brands/{{brandId}}/pay/{{advocateInvoiceId}}
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Get recents client invoices
+##################################################
+GET {{api_url}}/brands/22222222-2222-2222-2222-222222222222/invoices?pageIndex=0&pageSize=25&sortOrder=Desc&sortBy=invoiceTotal
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Get ticket statistics overview for a given date range
+##################################################
+GET {{api_url}}/tickets/statistics/overview?from=020319871200&to=030319871200
+Content-Type: application/json
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Get ticket statistics overview without a given date range
+##################################################
+GET {{api_url}}/tickets/statistics/overview
+Content-Type: application/json
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Schedule ticket export
+##################################################
+POST {{api_url}}/tickets/export?from=010120200000&brandId={{brandId}}
+Content-Type: application/json
+Authorization: Bearer {{cliToken}}
+
+##################################################
+### Set new contract details on brand
+##################################################
+POST {{api_url}}/brands/{{brandId}}/contract
+Content-Type: application/json
+Authorization: Bearer {{cliToken}}
+
+{
+  "contractContent": "This is brand new contract details"
+}

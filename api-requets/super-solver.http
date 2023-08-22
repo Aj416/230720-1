@@ -1,0 +1,40 @@
+# This file is for super solver (which is technically a solver with slightly different permissions than a solver).
+
+##################################################
+### Get Super Solver Token
+##################################################
+# @name superSolverToken
+POST https://{{auth0_domain}}/oauth/token
+Content-Type: application/json
+
+{
+    "grant_type":"password",
+    "username":"{{super_solver_email}}",
+    "password":"{{super_solver_password}}",
+    "client_id": "{{auth0_clientId}}",
+    "audience": "{{auth0_audience}}",
+    "scope": "openid profile"
+}
+
+###
+
+@ssToken = {{superSolverToken.response.body.id_token}}
+@ticketId = 32432423-324-324-23-42-3
+
+##################################################
+### Solve a ticket
+##################################################
+POST {{api_url}}/tickets/{{ticketId}}/solve
+Content-Type: application/json
+Authorization: Bearer {{ssToken}}
+
+
+##################################################
+### Fetch User Info
+##################################################
+# @name userInfo
+GET {{api_url}}/userinfo
+Accept: application/json
+Authorization: Bearer {{ssToken}}
+
+@userId = {{userInfo.response.body.id}}
